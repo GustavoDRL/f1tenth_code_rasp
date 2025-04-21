@@ -12,9 +12,11 @@ Este repositório contém o código ROS2 para um veículo autônomo da categoria
 
 ## Status Atual
 
-- **Controle do Motor:** Integração com o VESC via pacote `f1tenth/vesc` funcional.
-- **Lidar:** Integração pendente.
-- **Servo de Direção:** Controle pendente.
+- **Controle do Motor:** Integração com o VESC via pacote `f1tenth/vesc` funcional, utilizando os nós `ackermann_to_vesc` e `vesc_to_odom`.
+- **Controle do Servo de Direção:** Implementado no pacote `f1tenth_control` (`servo_control_node.py`). O nó assina `/drive` e controla o servo via GPIO utilizando a biblioteca `pigpio`.
+- **Odometria:** Publicada no tópico `/ego_racecar/odom` pelo `servo_control_node` (republicando dados do `vesc_to_odom`) com a transformação TF (`odom` -> `base_link`) correspondente.
+- **Lidar:** Integração pendente. O driver YDLIDAR está no workspace, mas sua inicialização está comentada no launch file principal. A transformação TF estática (`base_link` -> `laser_frame`) ainda precisa ser configurada.
+- **Controle Remoto:** Funcional através do pacote `Joy_converter` e nós relacionados.
 
 ## Estrutura de Tópicos ROS2 (Esperada - Padrão F1TENTH Sim)
 
@@ -31,7 +33,9 @@ _(Tópicos adicionais para múltiplos agentes são omitidos por enquanto, mas po
 
 **Tópicos Assinados pelo Robô:**
 
-- `/drive` ([ackermann_msgs/msg/AckermannDriveStamped](https://github.com/ros-drivers/ackermann_msgs/blob/ros2/msg/AckermannDriveStamped.msg)): Comando de controle de velocidade e ângulo de direção para o agente ego.
+- `/drive` ([ackermann_msgs/msg/AckermannDriveStamped](https://github.com/ros-drivers/ackermann_msgs/blob/ros2/msg/AckermannDriveStamped.msg)): Comando de controle de velocidade e ângulo de direção para o agente ego. Assinado pelo `ackermann_to_vesc_node` (para velocidade) e `servo_control_node` (para direção).
+- `/joy` ([sensor_msgs/msg/Joy](http://docs.ros.org/en/humble/api/sensor_msgs/msg/Joy.html)): Mensagens do controle joystick (geralmente para o `joy_node`).
+- `/odom` ([nav_msgs/msg/Odometry](http://docs.ros.org/en/humble/api/nav_msgs/msg/Odometry.html)): Odometria publicada pelo `vesc_to_odom_node`, assinada pelo `servo_control_node` para republicação.
 
 _(Tópicos de controle adicionais como `/initialpose` são geralmente usados com RViz e não diretamente publicados por nós de controle)_
 
@@ -117,39 +121,43 @@ _Referência: [https://github.com/YDLIDAR/ydlidar_ros2_driver](https://github.co
 
 _(Esta seção deve ser atualizada conforme o projeto evolui)_
 
-- O workspace contém os pacotes `vesc_driver`, `vesc_msgs`, `vesc_ackermann` e `ydlidar_ros2_driver` no diretório `src/`.
-- _(Adicione aqui outros pacotes customizados do seu projeto quando existirem)_
-- Os arquivos de configuração (`vesc_config.yaml`, `ydlidar.yaml`) devem ser ajustados conforme o hardware específico.
-- Um launch file principal (`.launch.py`) deve ser criado para iniciar todos os nós necessários (VESC, Lidar, Servo, controle, etc.).
+- O workspace contém os pacotes `vesc` (driver original), `ydlidar_ros2_driver`, e pacotes customizados:
+  - `vesc_config`: Contém configurações e launch file para o driver VESC.
+  - `f1tenth_control`: Contém o nó principal `servo_control_node.py` (para controle de servo e republicação de odometria/TF) e os launch files do projeto.
+  - `Joy_converter`: Para converter comandos do joystick em mensagens `/drive`.
+- Os arquivos de configuração (`vesc_config.yaml`, `ydlidar.yaml`, e parâmetros dentro dos nós/launch files) devem ser ajustados conforme o hardware específico.
+- O launch file principal (`src/f1tenth_control/launch/f1tenth_full.launch.py`) inicia os drivers (VESC), nós de controle (ackermann, servo) e a interface do joystick. A inicialização do Lidar está presente mas comentada.
+- Um arquivo `.gitignore` está configurado para ignorar arquivos de build, logs e outros arquivos temporários do Python e ROS 2, mantendo o repositório limpo.
 
 ## Trabalhos Futuros
 
-**1. Controle do Servo Motor de Direção**
+**1. Integração e Interpretação do Lidar**
 
-- **Desafio:** O tópico `/drive` (`AckermannDriveStamped`) contém `steering_angle`, mas o VESC (geralmente) controla apenas a velocidade (`speed`). Um mecanismo separado é necessário para comandar o servo de direção conectado aos pinos GPIO do Raspberry Pi.
-- **Solução Proposta:**
-  - Criar um nó ROS2 simples (Python é recomendado pela facilidade de uso com GPIO).
-  - Este nó assinará o tópico `/drive`.
-  - Ao receber uma mensagem, extrairá o `steering_angle`.
-  - Converterá o ângulo (radianos) para um valor de PWM (Pulse Width Modulation) adequado para o servo motor. Isso requer calibração para mapear ângulos para larguras de pulso (e.g., 1000µs a 2000µs).
-  - Utilizará uma biblioteca Python para controle de GPIO/PWM no Raspberry Pi:
-    - **`RPi.GPIO`:** Padrão, mas pode ter jitter no PWM por software.
-    - **`pigpio`:** Oferece PWM por hardware (mais estável), requer um daemon (`sudo systemctl start pigpiod`). É geralmente a **opção preferida** para controle preciso de servos.
-    - **`gpiozero`:** Abstração de alto nível sobre `RPi.GPIO` ou `pigpio`.
-  - O nó publicará o sinal PWM para o pino GPIO conectado ao servo.
-- **Considerações:**
-  - Alimentação do servo (geralmente requer uma fonte externa de 5V, não diretamente dos pinos 5V do RPi que podem não fornecer corrente suficiente).
-  - Calibração cuidadosa do mapeamento ângulo-PWM.
-  - Definição de limites de ângulo para evitar danos mecânicos.
-
-**2. Integração e Interpretação do Lidar**
-
-- **Configuração:** Garantir que o driver YDLIDAR esteja corretamente configurado (`ydlidar.yaml`) e publicando no tópico `/scan`.
-- **Frame ID e TF:** Verificar se o `frame_id` no arquivo de configuração do Lidar (e.g., `laser_frame`) está correto e se existe uma transformação estática (publicada via `tf_static` publisher, geralmente em um launch file) entre o frame base do robô (`base_link` ou `ego_racecar/base_link`) e o `laser_frame`. Isso é crucial para que outros nós entendam a posição do Lidar em relação ao robô.
-- **Utilização dos Dados:** Os dados do `/scan` são a base para:
+- **Configuração:**
+  - Descomentar a seção do Lidar no launch file principal (`f1tenth_full.launch.py`).
+  - Garantir que o driver YDLIDAR esteja corretamente configurado (`ydlidar.yaml`) e publicando no tópico `/scan`.
+  - **Frame ID e TF:** Verificar se o `frame_id` no arquivo de configuração do Lidar (e.g., `laser_frame`) está correto.
+  - **Criar e adicionar um publicador de transformação estática** (Static TF Publisher) ao launch file principal para publicar a transformação entre o frame base do robô (`base_link` ou `ego_racecar/base_link`) e o `laser_frame`. Isso é crucial para que outros nós entendam a posição do Lidar em relação ao robô. Exemplo de nó a adicionar no launch file:
+    ```python
+    Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_base_link_to_laser_frame',
+        arguments=['0.1', '0.0', '0.2', '0', '0', '0', 'base_link', 'laser_frame'] # Exemplo: X, Y, Z, Roll, Pitch, Yaw, parent_frame, child_frame
+        # Ajuste os valores de translação (X, Y, Z) e rotação (Roll, Pitch, Yaw)
+        # para corresponder à posição física do Lidar no robô.
+    ),
+    ```
+- **Utilização dos Dados:** Após a integração, os dados do `/scan` serão a base para:
   - **SLAM (Simultaneous Localization and Mapping):** Usar pacotes como `slam_toolbox` ou `cartographer` para construir mapas (`/map`) e localizar o robô dentro deles.
-  - **Detecção de Obstáculos:** Implementar algoritmos simples ou complexos para identificar obstáculos próximos.
+  - **Detecção de Obstáculos:** Implementar algoritmos para identificar obstáculos.
   - **Planejamento de Caminho e Desvio de Obstáculos:** Usar os dados de scan e/ou o mapa para planejar trajetórias seguras (e.g., usando `nav2`).
+
+**2. Calibração e Ajustes Finos**
+
+- Calibrar precisamente o mapeamento ângulo-PWM do servo no `servo_control_node.py` (parâmetros `servo_min_pulse_width`, `servo_max_pulse_width`, `min_steering_angle`, `max_steering_angle`).
+- Verificar e ajustar os parâmetros do VESC (correntes, limites, etc.) em `vesc_config.yaml`.
+- Ajustar os parâmetros de odometria no `vesc_to_odom_node` (e.g., `wheelbase`, `publish_tf`) se necessário.
 
 ## Construindo e Executando o Projeto
 
@@ -161,14 +169,21 @@ cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 
 # Construa todos os pacotes no workspace
-colcon build
+colcon build --symlink-install # Usar --symlink-install é útil durante o desenvolvimento
 
 # Faça o source do setup do seu workspace (necessário após cada build ou em novo terminal)
 source install/setup.bash
 
-# Execute o launch file principal (que você precisará criar)
-# Exemplo: ros2 launch seu_pacote_launch seu_launch_file.launch.py
+# Execute o launch file principal
+ros2 launch f1tenth_control f1tenth_full.launch.py
 ```
+
+## Controle de Versão
+
+Este projeto utiliza Git para controle de versão.
+
+- O arquivo `.gitignore` na raiz do repositório está configurado para evitar o rastreamento de arquivos gerados automaticamente (builds, logs, caches, etc.). É importante mantê-lo atualizado caso novas ferramentas ou arquivos temporários sejam introduzidos.
+- Recomenda-se fazer commits frequentes com mensagens descritivas para rastrear o progresso e facilitar a colaboração ou reversão de alterações.
 
 ---
 
