@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>f1tenth_control</name>
+  <version>0.0.1</version>
+  <description>Controle integrado F1TENTH para Raspberry Pi (VESC + Servo)</description>
+  <maintainer email="seu_email@example.com">seu_nome</maintainer>
+  <license>TODO: License declaration</license> <!-- Ex: Apache License 2.0 -->
+
+  <!-- Dependências de buildtool, geralmente ament_python para pacotes Python -->
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Dependências de execução (necessárias para rodar o código) -->
+  <exec_depend>rclpy</exec_depend>
+  <!-- Adicione outras dependências de execução se necessário, e.g.: -->
+  <!-- <exec_depend>std_msgs</exec_depend> -->
+  <!-- <exec_depend>sensor_msgs</exec_depend> -->
+
+  <!-- Dependências de teste -->
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package> 
