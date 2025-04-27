@@ -10,19 +10,20 @@ import os
 def generate_launch_description():
     # Obter diretórios dos pacotes
     f1tenth_control_dir = get_package_share_directory('f1tenth_control')
-    vesc_config_dir = get_package_share_directory('vesc_config') # Usar seu pacote de config VESC
+    vesc_driver_dir = get_package_share_directory('vesc_driver')
     vesc_ackermann_dir = get_package_share_directory('vesc_ackermann')
     joy_converter_dir = get_package_share_directory('joy_converter')
     # ydlidar_dir = get_package_share_directory('ydlidar_ros2_driver') # Para quando o Lidar for adicionado
 
     # --- Componentes Individuais ---
 
-    # 1. Driver VESC (usando seu arquivo de configuração)
+    # 1. Driver VESC (usando o launch file do pacote vesc_driver)
     vesc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(vesc_config_dir, 'launch', 'vesc_driver.launch.py')
+            os.path.join(vesc_driver_dir, 'launch', 'vesc_driver_node.launch.py')
         )
-        # Nota: Verifique se vesc_driver.launch.py usa o vesc_config.yaml correto
+        # Nota: O vesc_driver_node.launch.py deve carregar o config YAML apropriado.
+        # Você pode precisar passar parâmetros para ele se o nome do YAML não for padrão.
     )
 
     # 2. VESC Ackermann (Nó de odometria: vesc_to_odom)
