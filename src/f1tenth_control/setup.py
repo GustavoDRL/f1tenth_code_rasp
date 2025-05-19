@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from glob import glob
 import os
 
@@ -7,7 +7,7 @@ package_name = 'f1tenth_control'
 setup(
     name=package_name,
     version='0.0.1',
-    packages=[package_name],
+    packages=find_packages(),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -30,6 +30,9 @@ setup(
             'servo_control_node = f1tenth_control.servo_control_node:main',
             # Adicionar o executável para o script de calibração
             'servo_calibration = f1tenth_control.servo_calibration:main',
+            # Adicionar aliases explícitos (tentativa de corrigir)
+            'f1tenth_servo_control = f1tenth_control.servo_control_node:main',
+            'f1tenth_servo_calibration = f1tenth_control.servo_calibration:main',
         ],
     },
 ) 
