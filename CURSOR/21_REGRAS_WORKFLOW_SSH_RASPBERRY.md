@@ -322,3 +322,217 @@ Antes de cada sessão de desenvolvimento, verificar:
 > 🏎️ **Raspberry Pi**: Ambiente de execução e validação definitiva  
 > 🔄 **Git Sync**: Sincronização automática entre WSL e Raspberry Pi  
 > ⚡ **Real-time**: Validação de performance apenas no hardware real 
+
+# 🔧 **REGRAS DE WORKFLOW SSH & RASPBERRY PI**
+
+## 🚨 **REGRA PRINCIPAL - NÃO EXECUTAR COMANDOS SSH**
+
+**❌ PROIBIDO**: Executar comandos via SSH no Raspberry Pi
+**✅ PERMITIDO**: Apenas fornecer lista de comandos para execução manual
+
+---
+
+## 📋 **WORKFLOW DEFINIDO**
+
+### **🎯 Responsabilidades do Assistant**
+1. **Análise**: Analisar código e problemas no workspace local
+2. **Solução**: Desenvolver soluções e correções no código local
+3. **Comandos**: Fornecer lista clara de comandos para execução
+4. **Aguardar**: Esperar feedback do usuário após execução
+5. **Iterar**: Ajustar soluções baseado no feedback recebido
+
+### **🎯 Responsabilidades do Usuário**
+1. **Execução**: Executar comandos fornecidos no Raspberry Pi
+2. **Feedback**: Reportar resultados, erros ou outputs
+3. **Validação**: Confirmar se soluções funcionaram
+4. **Atualização**: Manter código sincronizado entre sistemas
+
+---
+
+## 📝 **FORMATO PADRÃO DE COMANDOS**
+
+### **🔄 Template de Resposta**
+```
+## 📋 **COMANDOS PARA EXECUTAR NO RASPBERRY PI**
+
+### **Passo 1: [Descrição]**
+```bash
+comando_aqui
+```
+**Objetivo**: Explicação do que o comando faz
+**Localização**: Diretório onde executar
+
+### **Passo 2: [Descrição]**
+```bash
+outro_comando
+```
+**Objetivo**: Explicação do objetivo
+**Esperado**: Output esperado
+
+---
+
+## ⏳ **AGUARDANDO FEEDBACK**
+Por favor, execute os comandos acima e reporte:
+- ✅ Sucessos
+- ❌ Erros ou problemas encontrados
+- 📊 Outputs importantes
+- 🔄 Próximos passos necessários
+```
+
+---
+
+## 🚀 **COMANDOS ESSENCIAIS F1TENTH**
+
+### **📦 Build & Instalação**
+```bash
+# Navegar para workspace
+cd ~/f1tenth_ws
+
+# Build completo
+colcon build --symlink-install
+
+# Source do workspace
+source install/setup.bash
+
+# Build pacote específico
+colcon build --packages-select f1tenth_control --symlink-install
+```
+
+### **🏃 Execução & Testes**
+```bash
+# Launch sistema completo
+ros2 launch f1tenth_control f1tenth_full.launch.py
+
+# Launch apenas controle
+ros2 launch f1tenth_control f1tenth_control.launch.py
+
+# Teste de nó específico
+ros2 run f1tenth_control servo_control_node
+
+# Verificar tópicos
+ros2 topic list
+ros2 topic echo /drive
+```
+
+### **🔍 Diagnóstico & Debug**
+```bash
+# Verificar processos ROS2
+ps aux | grep ros2
+
+# Monitorar recursos
+top
+htop
+
+# Verificar logs
+ros2 log list
+journalctl -f
+
+# Testar hardware
+ls /dev/tty*
+sudo dmesg | tail
+```
+
+### **📊 Performance & Monitoring**
+```bash
+# Frequência de tópicos
+ros2 topic hz /scan
+ros2 topic hz /drive
+
+# Bandwidth de tópicos
+ros2 topic bw /scan
+
+# Info de nós
+ros2 node list
+ros2 node info /servo_control_node
+```
+
+---
+
+## 🔧 **RESOLUÇÃO DE PROBLEMAS COMUNS**
+
+### **❌ Erro: Permission Denied (GPIO)**
+```bash
+sudo usermod -a -G gpio $USER
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
+# Reiniciar sessão após comando usermod
+```
+
+### **❌ Erro: Serial Port Access**
+```bash
+sudo usermod -a -G dialout $USER
+ls -la /dev/ttyACM*
+# Reiniciar sessão após comando usermod
+```
+
+### **❌ Erro: Build Failed**
+```bash
+# Limpar build anterior
+rm -rf build/ install/ log/
+
+# Verificar dependências
+rosdep install --from-paths src --ignore-src -r -y
+
+# Build com verbose
+colcon build --symlink-install --verbose
+```
+
+### **❌ Erro: Node não responde**
+```bash
+# Verificar nó ativo
+ros2 node list
+
+# Verificar parâmetros
+ros2 param list /servo_control_node
+
+# Restart do nó
+# Ctrl+C para parar
+ros2 run f1tenth_control servo_control_node
+```
+
+---
+
+## 📋 **CHECKLIST PRÉ-EXECUÇÃO**
+
+Antes de executar comandos, verificar:
+- [ ] SSH conectado e estável
+- [ ] Localização correta (`~/f1tenth_ws`)
+- [ ] Workspace sourced (`source install/setup.bash`)
+- [ ] Hardware conectado (VESC, servo, etc.)
+- [ ] Permissões corretas (GPIO, serial)
+
+---
+
+## 🔄 **CICLO DE DESENVOLVIMENTO**
+
+### **Fluxo Padrão**
+1. **Assistant**: Analisa problema e fornece comandos
+2. **Usuário**: Executa comandos no Raspberry Pi
+3. **Usuário**: Reporta feedback (sucesso/erro/output)
+4. **Assistant**: Ajusta solução baseado no feedback
+5. **Repetir**: Até resolução completa
+
+### **Exemplo de Iteração**
+```
+Assistant: "Execute: ros2 launch f1tenth_control servo_test.launch.py"
+Usuário: "Erro: No module named 'pigpio'"
+Assistant: "Execute: sudo apt install python3-pigpio"
+Usuário: "Instalado com sucesso"
+Assistant: "Agora execute novamente o launch"
+Usuário: "Funcionou! Servo respondendo"
+```
+
+---
+
+## 📚 **DOCUMENTAÇÃO DE REFERÊNCIA**
+
+- **F1TENTH Setup**: `/CURSOR/configuracoes/11_SETUP_COMPLETO_RASPBERRY.md`
+- **Análise Técnica**: `/CURSOR/analises/04_RELATORIO_REVIEW_TECNICO_CODIGO.md`
+- **Roadmap**: `/CURSOR/desenvolvimento/13_ROADMAP_DESENVOLVIMENTO.md`
+
+---
+
+> 🎯 **LEMBRE-SE**: NUNCA executar comandos SSH automaticamente
+> 📋 **SEMPRE**: Fornecer lista de comandos para execução manual
+> ⏳ **AGUARDAR**: Feedback antes de prosseguir
+> 🔄 **ITERAR**: Baseado nos resultados reportados 

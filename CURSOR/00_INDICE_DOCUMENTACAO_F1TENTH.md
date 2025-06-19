@@ -32,11 +32,13 @@ Este projeto implementa um sistema completo de controle para veículos autônomo
 - [`10_CONFIGURACAO_LAUNCH_FILES.md`](./configuracoes/10_CONFIGURACAO_LAUNCH_FILES.md) - Launch files detalhados
 - [`11_SETUP_COMPLETO_RASPBERRY.md`](./configuracoes/11_SETUP_COMPLETO_RASPBERRY.md) - Setup completo do Raspberry Pi
 - [`12_GUIA_INSTALACAO_DEPENDENCIAS.md`](./configuracoes/12_GUIA_INSTALACAO_DEPENDENCIAS.md) - Instalação de todas as dependências
+- [`22_WORKFLOW_COMANDOS_RASPBERRY.md`](./configuracoes/22_WORKFLOW_COMANDOS_RASPBERRY.md) - **Workflow comandos Raspberry Pi**
 
 ### 🔬 **DESENVOLVIMENTO E EXTENSÕES**
 - [`13_ROADMAP_DESENVOLVIMENTO.md`](./desenvolvimento/13_ROADMAP_DESENVOLVIMENTO.md) - Plano de desenvolvimento futuro
 - [`20_PLANO_CORRECAO_PROBLEMAS_TECNICOS.md`](./desenvolvimento/20_PLANO_CORRECAO_PROBLEMAS_TECNICOS.md) - **Plano detalhado de correções**
 - [`21_REGRAS_WORKFLOW_SSH_RASPBERRY.md`](./21_REGRAS_WORKFLOW_SSH_RASPBERRY.md) - **REGRAS OBRIGATÓRIAS - Workflow SSH/Raspberry Pi**
+- [`22_WORKFLOW_COMANDOS_RASPBERRY.md`](./configuracoes/22_WORKFLOW_COMANDOS_RASPBERRY.md) - **Workflow detalhado de comandos**
 - [`14_INTEGRACAO_LIDAR_PLANEJADA.md`](./desenvolvimento/14_INTEGRACAO_LIDAR_PLANEJADA.md) - Integração LiDAR pendente
 - [`15_OTIMIZACOES_PERFORMANCE.md`](./desenvolvimento/15_OTIMIZACOES_PERFORMANCE.md) - Otimizações recomendadas
 - [`16_EXTENSOES_NAVEGACAO_AUTONOMA.md`](./desenvolvimento/16_EXTENSOES_NAVEGACAO_AUTONOMA.md) - Extensões para navegação
