@@ -3,8 +3,11 @@ enhanced_servo_control_node:
     # ===== CONFIGURAÇÃO GPIO =====
     servo_gpio_pin: 18                    # Pino GPIO BCM para PWM do servo
     servo_pwm_frequency: 50               # Frequência PWM (Hz) - padrão servos RC
-    servo_min_pulse_width: 1000           # Largura mínima pulso (µs) - calibrar!
-    servo_max_pulse_width: 2000           # Largura máxima pulso (µs) - calibrar!
+    
+    # ===== PARÂMETROS CALIBRADOS EMPIRICAMENTE (2025-06-19) =====
+    servo_min_pulse_width: 850            # Extremo esquerdo real (calibrado)
+    servo_center_pulse_width: 1175        # Centro real descoberto (calibrado)
+    servo_max_pulse_width: 1500           # Extremo direito real (calibrado)
     
     # ===== LIMITES FÍSICOS =====
     max_steering_angle: 0.4               # Ângulo máximo direção (rad) ~23°
@@ -36,21 +39,13 @@ enhanced_servo_control_node:
     vesc_odom_topic: "/odom"             # Tópico odometria VESC original
     
     # ===== CALIBRAÇÃO ESPECÍFICA POR SERVO =====
-    # Exemplo para servo SG90 (micro servo comum):
-    # servo_min_pulse_width: 500
-    # servo_max_pulse_width: 2400
-    
-    # Exemplo para servo MG996R (servo padrão):
-    # servo_min_pulse_width: 1000  
-    # servo_max_pulse_width: 2000
-    
-    # Exemplo para servo de alta precisão:
-    # servo_min_pulse_width: 900
-    # servo_max_pulse_width: 2100
+    # VALORES ATUAIS CALIBRADOS PARA ESTE SERVO ESPECÍFICO:
+    # Centro: 1175µs (não é o padrão 1500µs)
+    # Faixa útil: 650µs (850-1500µs ao invés de 1000µs)
+    # Servo responde corretamente nos extremos descobertos
     
     # ===== PARÂMETROS EXPERIMENTAIS =====
     # Descomente e ajuste conforme necessário:
-    # servo_center_pulse_width: 1500     # PWM para posição central (µs)
     # pid_max_integral: 0.5              # Limite anti-windup PID
     # emergency_stop_angle: 0.0          # Ângulo para parada emergência
     # diagnostic_rate: 1.0               # Taxa publicação diagnósticos (Hz) 

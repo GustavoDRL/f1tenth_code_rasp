@@ -50,8 +50,9 @@ class ServoControlNode(Node):
             parameters=[
                 ('servo_gpio_pin', 18),
                 ('servo_pwm_frequency', 50),
-                ('servo_min_pulse_width', 1000),
-                ('servo_max_pulse_width', 2000),
+                ('servo_min_pulse_width', 850),   # Valor calibrado
+                ('servo_center_pulse_width', 1175), # Centro real descoberto
+                ('servo_max_pulse_width', 1500),  # Valor calibrado
                 ('gpio_connection_timeout', 5.0),  # Timeout (s) para pigpio
                 ('max_steering_angle', 0.4),
                 ('min_steering_angle', -0.4),
@@ -68,6 +69,7 @@ class ServoControlNode(Node):
         self.servo_gpio_pin = self.get_parameter('servo_gpio_pin').value
         self.servo_pwm_frequency = self.get_parameter('servo_pwm_frequency').value
         self.servo_min_pulse_width = self.get_parameter('servo_min_pulse_width').value
+        self.servo_center_pulse_width = self.get_parameter('servo_center_pulse_width').value
         self.servo_max_pulse_width = self.get_parameter('servo_max_pulse_width').value
         self.gpio_connection_timeout = self.get_parameter('gpio_connection_timeout').value
         self.max_steering_angle = self.get_parameter('max_steering_angle').value
@@ -97,10 +99,10 @@ class ServoControlNode(Node):
                     self.pi.set_mode(self.servo_gpio_pin, pigpio.OUTPUT)
                     self.pi.set_PWM_frequency(self.servo_gpio_pin, self.servo_pwm_frequency)
 
-                    # Centralizar o servo na inicialização
+                    # Centralizar o servo na inicialização com valor calibrado
                     self.set_servo_angle(0.0)
 
-                    self.get_logger().info(f'Servo inicializado no pino GPIO {self.servo_gpio_pin}')
+                    self.get_logger().info(f'Servo inicializado no pino GPIO {self.servo_gpio_pin} com calibração: centro={self.servo_center_pulse_width}µs')
             except Exception as e:
                 self.get_logger().error(f'Erro ao inicializar pigpio: {e}')
                 self.pi = None
@@ -139,6 +141,11 @@ class ServoControlNode(Node):
     def set_servo_angle(self, angle):
         """
         Converte um ângulo de direção (em radianos) para um valor de PWM e envia para o servo.
+        
+        CALIBRAÇÃO ATUALIZADA (2025-06-19):
+        - Centro: 1175µs (angle = 0.0)
+        - Esquerda: 850µs (angle = -0.4)  
+        - Direita: 1500µs (angle = +0.4)
 
         Args:
             angle (float): Ângulo de direção em radianos
@@ -151,20 +158,19 @@ class ServoControlNode(Node):
         # Limitar o ângulo aos valores mínimo e máximo
         angle = min(max(angle, self.min_steering_angle), self.max_steering_angle)
 
-        # Mapear o ângulo para a faixa de largura de pulso
-        # Supõe que o ângulo 0 está no centro do servo (meio da faixa de PWM)
-        angle_range = self.max_steering_angle - self.min_steering_angle
-        pulse_range = self.servo_max_pulse_width - self.servo_min_pulse_width
-
-        # Normalizar o ângulo para um valor entre 0 e 1, considerando min_angle como 0
-        # e max_angle como 1
-        if angle_range == 0:
-             normalized_angle = 0.5 # Evita divisão por zero se min==max
+        # Tratamento especial para ângulo zero (centro)
+        if abs(angle) < 0.001:  # Próximo de zero
+            pulse_width = self.servo_center_pulse_width
         else:
-            normalized_angle = (angle - self.min_steering_angle) / angle_range
-
-        # Converter para largura de pulso em microssegundos
-        pulse_width = self.servo_min_pulse_width + normalized_angle * pulse_range
+            # Mapear o ângulo para a faixa de largura de pulso
+            if angle > 0:  # Direita
+                # Mapear de 0 até max_angle para center até max_pulse
+                ratio = angle / self.max_steering_angle
+                pulse_width = self.servo_center_pulse_width + ratio * (self.servo_max_pulse_width - self.servo_center_pulse_width)
+            else:  # Esquerda
+                # Mapear de min_angle até 0 para min_pulse até center
+                ratio = abs(angle) / abs(self.min_steering_angle)
+                pulse_width = self.servo_center_pulse_width - ratio * (self.servo_center_pulse_width - self.servo_min_pulse_width)
 
         # Garantir que a largura de pulso esteja dentro dos limites absolutos
         pulse_width = int(min(max(pulse_width, self.servo_min_pulse_width), self.servo_max_pulse_width))

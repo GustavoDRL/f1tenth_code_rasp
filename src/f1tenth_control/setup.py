@@ -31,6 +31,7 @@ setup(
             # Adicionar o executável para o script de calibração
             'enhanced_servo_control_node = f1tenth_control.enhanced_servo_control_node:main',
             'servo_calibration = f1tenth_control.servo_calibration:main',
+            'test_calibrated_servo = f1tenth_control.test_calibrated_servo:test_calibrated_values',
         ],
     },
 ) 

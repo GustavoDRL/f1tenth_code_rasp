@@ -2,14 +2,19 @@
 
 **Projeto**: Sistema de Controle Integrado F1TENTH para Raspberry Pi
 **Versão**: 1.0
-**Última Atualização**: 2025-01-20
-**Status**: Sistema Funcional - LiDAR Pendente
+**Última Atualização**: 2025-06-19
+**Status**: Sistema Operacional - Calibração Servo Descoberta
 
 ---
 
 ## 🎯 VISÃO GERAL DO PROJETO
 
 Este projeto implementa um sistema completo de controle para veículos autônomos F1TENTH em escala 1/10, executando em Raspberry Pi 4B com ROS2 Humble. O sistema integra controle de motor via VESC, direção via servo GPIO, interface joystick e preparação para sensores LiDAR.
+
+---
+
+## 🏁 **STATUS GERAL DO PROJETO**
+- [`06_STATUS_PROJETO_F1TENTH.md`](./06_STATUS_PROJETO_F1TENTH.md) - **📊 Status completo e atualizado do projeto**
 
 ---
 
@@ -20,6 +25,7 @@ Este projeto implementa um sistema completo de controle para veículos autônomo
 - [`02_ANALISE_PACOTES_ROS2.md`](./analises/02_ANALISE_PACOTES_ROS2.md) - Detalhamento de todos os pacotes
 - [`03_ANALISE_FLUXO_COMUNICACAO.md`](./analises/03_ANALISE_FLUXO_COMUNICACAO.md) - Mapeamento de tópicos e comunicação
 - [`04_RELATORIO_REVIEW_TECNICO_CODIGO.md`](./analises/04_RELATORIO_REVIEW_TECNICO_CODIGO.md) - **Review técnico detalhado do código**
+- [`05_CALIBRACAO_SERVO_DESCOBERTAS.md`](./analises/05_CALIBRACAO_SERVO_DESCOBERTAS.md) - **🔧 Calibração servo - descobertas validadas**
 
 ### ⚙️ **IMPLEMENTAÇÕES**
 - [`05_IMPLEMENTACAO_CONTROLE_INTEGRADO.md`](./implementacoes/05_IMPLEMENTACAO_CONTROLE_INTEGRADO.md) - f1tenth_control detalhado
