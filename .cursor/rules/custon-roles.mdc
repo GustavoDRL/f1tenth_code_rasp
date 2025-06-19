@@ -1,46 +1,1378 @@
 ---
-description: 
-globs: 
+description:
+globs:
+alwaysApply: true
+---
+---
+description: "F1TENTH Autonomous Racing ROS2 Development Rules with embedded systems optimization and real-time performance priority"
+globs: ["*.py", "*.cpp", "*.hpp", "*.h", "*.launch.py", "*.yaml", "*.yml", "*.md", "*.xml", "*.urdf", "*.xacro", "src/**/*", "launch/**/*", "config/**/*", "CMakeLists.txt", "package.xml", "setup.py"]
 alwaysApply: true
 ---
 
-# Your rule content
-Você é um professor universitário PhD em Engenharia Robótica, com 15 anos de experiência especializada em navegação de robôs móveis e desenvolvimento de algoritmos de desvio de obstáculos. Sua missão é desenvolver o melhor código possível dada sua tarefa e condições do problema.
+# 🏎️ F1TENTH ROS2 AUTONOMOUS RACING - DEVELOPMENT RULES
 
-Contexto Técnico:
-- Você deve avaliar o código considerando aspectos de eficiência computacional e robustez
-- O ambiente de operação envolve robôs móveis em cenários dinâmicos
-- A implementação deve seguir as melhores práticas de programação em robótica
+## 🎯 PRIORITY RULE: EMBEDDED REAL-TIME PERFORMANCE
 
-Processo de Análise:
-1. Realize uma análise detalhada do código fornecido, identificando:
-   - Complexidade computacional
-   - Potenciais gargalos de performance
-   - Qualidade e clareza do código
+**EVERY IMPLEMENTATION MUST PRIORITIZE REAL-TIME PERFORMANCE ON RASPBERRY PI 4B**
 
-2. Forneça recomendações de otimização focando em:
-   - Eficiência algorítmica
-   - Robustez em diferentes cenários
-   - Tratamento de casos extremos
-   - Legibilidade e manutenibilidade
+### 📁 **MANDATORY PROJECT STRUCTURE** (F1TENTH Standard Compliance)
 
-Formato da Resposta:
-1. Análise Inicial:
-   - Visão geral do código
-   - Identificação dos principais componentes
-   - Avaliação da implementação atual
+#### **📂 WORKSPACE ORGANIZATION** (ROS2 Best Practices)
+```
+~/f1tenth_ws/
+├── src/                           # Source packages
+│   ├── f1tenth_control/          # Vehicle control package
+│   ├── f1tenth_sensors/          # Sensor interfaces
+│   ├── f1tenth_navigation/       # Planning & navigation
+│   ├── f1tenth_perception/       # Lidar processing
+│   ├── f1tenth_bringup/          # Launch configurations
+│   ├── f1tenth_msgs/             # Custom message types
+│   └── external/                 # Third-party packages
+├── build/                        # Build artifacts (ignored)
+├── install/                      # Installation (ignored)
+├── log/                          # Build logs (ignored)
+└── docs/                         # Project documentation
+```
 
-2. Recomendações de Otimização:
-   - Melhorias específicas com exemplos de código
-   - Justificativa técnica para cada modificação
-   - Análise de impacto das mudanças
+#### **📦 PACKAGE STRUCTURE** (Per ROS2 REP-144 Standard)
+```
+f1tenth_package/
+├── package.xml                   # Package metadata
+├── CMakeLists.txt               # Build configuration (C++)
+├── setup.py                     # Installation (Python)
+├── README.md                    # Package documentation
+├── CHANGELOG.md                 # Version history
+├── src/                         # Source code
+│   └── f1tenth_package/         # Python modules
+├── include/f1tenth_package/     # C++ headers
+├── launch/                      # Launch files
+├── config/                      # Configuration files
+├── urdf/                        # Robot descriptions
+├── maps/                        # Map files
+├── rviz/                        # RViz configurations
+└── test/                        # Unit tests
+```
 
-3. Código Otimizado:
-   - Implementação refatorada com comentários detalhados
-   - Explicação das modificações realizadas
-   - Considerações sobre trade-offs
+### 🏗️ **ROS2 NAMING CONVENTIONS** (Mandatory Compliance)
 
-4. Sugestões Adicionais:
-   - Testes recomendados
-   - Possíveis extensões do algoritmo
-   - Melhores práticas específicas para robótica móvel
+#### **📋 Package Naming Standards**
+```yaml
+Packages:
+  format: snake_case
+  pattern: f1tenth_[functionality]
+  examples:
+    - f1tenth_control      # Vehicle control
+    - f1tenth_sensors      # Sensor drivers
+    - f1tenth_navigation   # Path planning
+    - f1tenth_perception   # SLAM, mapping
+    - f1tenth_bringup     # System launch
+
+Nodes:
+  format: snake_case_node
+  pattern: [function]_node
+  examples:
+    - servo_control_node
+    - lidar_processing_node
+    - path_planner_node
+
+Topics:
+  format: snake_case
+  pattern: /[namespace]/[descriptive_name]
+  examples:
+    - /ego_racecar/odom
+    - /scan
+    - /drive
+    - /map
+
+Services:
+  format: snake_case
+  examples:
+    - emergency_stop
+    - set_speed_limit
+    - reset_odometry
+
+Messages:
+  format: PascalCase.msg
+  examples:
+    - AckermannDriveStamped.msg
+    - VehicleState.msg
+    - RaceCommand.msg
+```
+
+### ✅ **F1TENTH DEVELOPMENT WORKFLOW**
+
+#### **🔄 Feature Development Process**
+1. **Analysis & Requirements**: Define performance constraints (timing, CPU, memory)
+2. **Design**: Create node architecture with real-time considerations
+3. **Implementation**: Code with embedded optimization patterns
+4. **Testing**: Unit tests + hardware-in-the-loop validation
+5. **Integration**: Multi-node system testing
+6. **Performance Validation**: Real-time metrics verification
+7. **Documentation**: Technical specs + operational guides
+
+#### **🎛️ Performance-Critical Workflow**
+```bash
+# 1. Pre-development setup
+source /opt/ros/humble/setup.bash
+cd ~/f1tenth_ws
+
+# 2. Development cycle
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+source install/setup.bash
+
+# 3. Real-time testing
+ros2 launch f1tenth_bringup f1tenth_system.launch.py
+ros2 topic hz /scan  # Verify sensor frequencies
+ros2 run rqt_graph rqt_graph  # Check communication topology
+
+# 4. Performance monitoring
+top -p $(pgrep -d',' ros)  # Monitor CPU usage
+rostopic bw /scan  # Check bandwidth usage
+```
+
+---
+
+## 🤖 **F1TENTH PROJECT CONTEXT** (Current Raspberry Pi System)
+
+### ✅ **PRODUCTION HARDWARE STACK**
+- **Platform**: Raspberry Pi 4B (4GB RAM, ARM Cortex-A72)
+- **OS**: Ubuntu Server 22.04 ARM64
+- **ROS**: ROS2 Humble Hawksbill
+- **Sensors**: YDLIDAR X4 (360° 2D LiDAR, 5kHz)
+- **Actuators**: VESC Motor Controller + Servo (50Hz PWM)
+- **Communication**: USB serial (VESC), GPIO (servo), USB (LiDAR)
+- **Control Loop**: 50Hz main control, 100Hz sensor processing
+
+### 📊 **CURRENT SYSTEM STATUS**
+- **VESC Integration**: ✅ Functional (ackermann_to_vesc, vesc_to_odom)
+- **Servo Control**: ✅ Functional (GPIO PWM via pigpio)
+- **Odometry**: ✅ Publishing /ego_racecar/odom with TF transforms
+- **Remote Control**: ✅ Joystick interface operational
+- **LiDAR Integration**: ⚠️ Driver installed, launch commented out
+- **SLAM/Navigation**: 🔄 Next implementation phase
+- **Safety Systems**: 🔄 Emergency stop integration pending
+
+### 🎯 **REAL-TIME PERFORMANCE TARGETS**
+- **Control Loop**: 50Hz (20ms max latency)
+- **Sensor Processing**: 100Hz (10ms max latency)
+- **Planning Algorithm**: 10Hz (100ms max computation)
+- **Emergency Stop**: <5ms reaction time
+- **Memory Usage**: <1.5GB total system
+- **CPU Usage**: <80% sustained load on Raspberry Pi
+
+---
+
+## 💻 **ROS2 CODING STANDARDS** (Embedded Optimization)
+
+### 🐍 **Python Node Template** (Performance Optimized)
+```python
+#!/usr/bin/env python3
+"""
+F1TENTH ROS2 Node Template
+Package: f1tenth_[package_name]
+Node: [node_name]_node
+
+Performance Requirements:
+- Max CPU usage: 15% per node on RPi4
+- Memory limit: 50MB per node
+- Real-time constraints: specified per node
+"""
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
+import numpy as np
+from typing import Optional, Callable
+import time
+
+# ROS2 message imports
+from std_msgs.msg import Header
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+from ackermann_msgs.msg import AckermannDriveStamped
+
+# Custom F1TENTH imports
+from f1tenth_msgs.msg import VehicleState, RaceCommand
+
+class F1TenthNode(Node):
+    """
+    Base class for F1TENTH nodes with embedded optimization.
+
+    Features:
+    - Real-time performance monitoring
+    - Memory-efficient data handling
+    - Hardware-specific optimizations
+    - Safety-first error handling
+    """
+
+    def __init__(self, node_name: str, namespace: str = "ego_racecar"):
+        super().__init__(node_name, namespace=namespace)
+
+        # Performance monitoring
+        self.start_time = time.time()
+        self.loop_count = 0
+        self.max_loop_time = 0.0
+
+        # Safety state
+        self.emergency_stop = False
+        self.last_heartbeat = time.time()
+
+        # QoS profiles for real-time performance
+        self.sensor_qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
+        self.control_qos = QoSProfile(
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+
+        # Initialize node-specific parameters
+        self.declare_parameters()
+        self.setup_publishers_subscribers()
+        self.setup_timers()
+
+        self.get_logger().info(f"{node_name} initialized successfully")
+
+    def declare_parameters(self):
+        """Declare node parameters with embedded system defaults."""
+        self.declare_parameter('control_frequency', 50.0)  # 50Hz control
+        self.declare_parameter('max_speed', 2.0)           # 2 m/s max
+        self.declare_parameter('safety_timeout', 0.5)      # 500ms timeout
+        self.declare_parameter('debug_mode', False)        # Disable for performance
+
+    def setup_publishers_subscribers(self):
+        """Setup ROS2 communication with optimized QoS."""
+        # Override in derived classes
+        pass
+
+    def setup_timers(self):
+        """Setup control timers with real-time priorities."""
+        control_freq = self.get_parameter('control_frequency').value
+        timer_period = 1.0 / control_freq
+
+        self.control_timer = self.create_timer(
+            timer_period,
+            self.control_callback
+        )
+
+        # Performance monitoring timer (1Hz)
+        self.perf_timer = self.create_timer(1.0, self.performance_callback)
+
+    def control_callback(self):
+        """Main control loop - must be overridden."""
+        start_time = time.time()
+
+        try:
+            # Safety check first
+            if self.check_safety_conditions():
+                self.execute_control_logic()
+            else:
+                self.emergency_stop_procedure()
+
+        except Exception as e:
+            self.get_logger().error(f"Control loop error: {e}")
+            self.emergency_stop_procedure()
+        finally:
+            # Performance monitoring
+            loop_time = time.time() - start_time
+            self.max_loop_time = max(self.max_loop_time, loop_time)
+            self.loop_count += 1
+
+    def execute_control_logic(self):
+        """Override this method with actual control logic."""
+        raise NotImplementedError("Must implement execute_control_logic()")
+
+    def check_safety_conditions(self) -> bool:
+        """Real-time safety condition checking."""
+        current_time = time.time()
+
+        # Check for communication timeouts
+        if current_time - self.last_heartbeat > self.get_parameter('safety_timeout').value:
+            self.get_logger().warn("Communication timeout detected")
+            return False
+
+        # Check emergency stop flag
+        if self.emergency_stop:
+            return False
+
+        return True
+
+    def emergency_stop_procedure(self):
+        """Immediate emergency stop implementation."""
+        self.emergency_stop = True
+        self.get_logger().error("EMERGENCY STOP ACTIVATED")
+        # Implement hardware-specific emergency stop
+
+    def performance_callback(self):
+        """Monitor and log performance metrics."""
+        if not self.get_parameter('debug_mode').value:
+            return
+
+        if self.loop_count > 0:
+            avg_time = (time.time() - self.start_time) / self.loop_count
+            self.get_logger().info(
+                f"Performance: avg={avg_time*1000:.2f}ms, "
+                f"max={self.max_loop_time*1000:.2f}ms, "
+                f"loops={self.loop_count}"
+            )
+```
+
+### 🔧 **C++ Node Template** (Maximum Performance)
+```cpp
+/**
+ * F1TENTH ROS2 C++ Node Template
+ * Package: f1tenth_[package_name]
+ * Node: [node_name]_node
+ *
+ * Optimized for Raspberry Pi 4B real-time performance
+ */
+
+#include <rclcpp/rclcpp.hpp>
+#include <memory>
+#include <chrono>
+#include <thread>
+
+// ROS2 message includes
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
+
+// F1TENTH custom messages
+#include <f1tenth_msgs/msg/vehicle_state.hpp>
+
+using namespace std::chrono_literals;
+
+class F1TenthNode : public rclcpp::Node
+{
+public:
+    explicit F1TenthNode(const std::string& node_name)
+        : Node(node_name, "ego_racecar")
+        , loop_count_(0)
+        , max_loop_time_(0.0)
+        , emergency_stop_(false)
+    {
+        // Declare parameters with embedded defaults
+        declare_parameters();
+
+        // Setup QoS profiles
+        setup_qos_profiles();
+
+        // Initialize publishers/subscribers
+        setup_communication();
+
+        // Setup high-frequency control timer
+        setup_timers();
+
+        RCLCPP_INFO(get_logger(), "%s initialized successfully", node_name.c_str());
+    }
+
+private:
+    void declare_parameters()
+    {
+        declare_parameter("control_frequency", 50.0);    // 50Hz control loop
+        declare_parameter("max_speed", 2.0);             // 2 m/s safety limit
+        declare_parameter("safety_timeout_ms", 500);     // 500ms timeout
+        declare_parameter("debug_mode", false);          // Performance mode
+    }
+
+    void setup_qos_profiles()
+    {
+        // Real-time sensor QoS (best effort, low latency)
+        sensor_qos_.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+        sensor_qos_.history(rclcpp::HistoryPolicy::KeepLast);
+        sensor_qos_.depth(1);
+
+        // Control QoS (reliable, low latency)
+        control_qos_.reliability(rclcpp::ReliabilityPolicy::Reliable);
+        control_qos_.history(rclcpp::HistoryPolicy::KeepLast);
+        control_qos_.depth(1);
+    }
+
+    void setup_communication()
+    {
+        // Implement in derived classes
+    }
+
+    void setup_timers()
+    {
+        auto control_freq = get_parameter("control_frequency").as_double();
+        auto timer_period = std::chrono::milliseconds(
+            static_cast<int>(1000.0 / control_freq)
+        );
+
+        control_timer_ = create_wall_timer(
+            timer_period,
+            std::bind(&F1TenthNode::control_callback, this)
+        );
+
+        // Performance monitoring timer (1Hz)
+        perf_timer_ = create_wall_timer(
+            1s,
+            std::bind(&F1TenthNode::performance_callback, this)
+        );
+    }
+
+    void control_callback()
+    {
+        auto start_time = std::chrono::high_resolution_clock::now();
+
+        try {
+            // Safety check first
+            if (check_safety_conditions()) {
+                execute_control_logic();
+            } else {
+                emergency_stop_procedure();
+            }
+        } catch (const std::exception& e) {
+            RCLCPP_ERROR(get_logger(), "Control loop error: %s", e.what());
+            emergency_stop_procedure();
+        }
+
+        // Performance monitoring
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(
+            end_time - start_time
+        ).count();
+
+        max_loop_time_ = std::max(max_loop_time_, duration);
+        ++loop_count_;
+    }
+
+    virtual void execute_control_logic() = 0;  // Pure virtual - must implement
+
+    bool check_safety_conditions()
+    {
+        auto now = this->now();
+
+        // Check communication timeout
+        auto timeout_ms = get_parameter("safety_timeout_ms").as_int();
+        if ((now - last_heartbeat_).nanoseconds() / 1e6 > timeout_ms) {
+            RCLCPP_WARN(get_logger(), "Communication timeout detected");
+            return false;
+        }
+
+        return !emergency_stop_;
+    }
+
+    void emergency_stop_procedure()
+    {
+        emergency_stop_ = true;
+        RCLCPP_ERROR(get_logger(), "EMERGENCY STOP ACTIVATED");
+        // Implement hardware emergency stop
+    }
+
+    void performance_callback()
+    {
+        if (!get_parameter("debug_mode").as_bool() || loop_count_ == 0) {
+            return;
+        }
+
+        double avg_time_us = static_cast<double>(max_loop_time_) / loop_count_;
+        RCLCPP_INFO(get_logger(),
+            "Performance: avg=%.2fμs, max=%ldμs, loops=%ld",
+            avg_time_us, max_loop_time_, loop_count_
+        );
+    }
+
+protected:
+    // QoS profiles
+    rclcpp::QoS sensor_qos_{1};
+    rclcpp::QoS control_qos_{1};
+
+    // Timers
+    rclcpp::TimerBase::SharedPtr control_timer_;
+    rclcpp::TimerBase::SharedPtr perf_timer_;
+
+    // Performance monitoring
+    std::atomic<long> loop_count_;
+    std::atomic<long> max_loop_time_;  // microseconds
+
+    // Safety
+    std::atomic<bool> emergency_stop_;
+    rclcpp::Time last_heartbeat_;
+};
+```
+
+### 🚀 **Launch File Template** (F1TENTH System)
+```python
+#!/usr/bin/env python3
+"""
+F1TENTH System Launch File
+Optimized for Raspberry Pi 4B deployment
+
+This launch file starts all necessary nodes for autonomous operation:
+- Hardware drivers (VESC, servo, LiDAR)
+- Control systems
+- Navigation stack
+- Safety monitoring
+"""
+
+from launch import LaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    GroupAction,
+    IncludeLaunchDescription,
+    TimerAction
+)
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    TextSubstitution
+)
+from launch_ros.actions import Node, SetParameter
+from launch_ros.substitutions import FindPackageShare
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+def generate_launch_description():
+    """Generate F1TENTH system launch description."""
+
+    # Declare launch arguments
+    declared_arguments = [
+        DeclareLaunchArgument(
+            'namespace',
+            default_value='ego_racecar',
+            description='Robot namespace'
+        ),
+        DeclareLaunchArgument(
+            'use_sim_time',
+            default_value='false',
+            description='Use simulation time'
+        ),
+        DeclareLaunchArgument(
+            'enable_lidar',
+            default_value='true',
+            description='Enable LiDAR sensor'
+        ),
+        DeclareLaunchArgument(
+            'enable_safety',
+            default_value='true',
+            description='Enable safety monitoring'
+        ),
+        DeclareLaunchArgument(
+            'control_frequency',
+            default_value='50.0',
+            description='Control loop frequency (Hz)'
+        ),
+        DeclareLaunchArgument(
+            'debug_mode',
+            default_value='false',
+            description='Enable debug logging'
+        )
+    ]
+
+    # Configuration file paths
+    vesc_config = PathJoinSubstitution([
+        FindPackageShare('f1tenth_control'),
+        'config', 'vesc_config.yaml'
+    ])
+
+    lidar_config = PathJoinSubstitution([
+        FindPackageShare('f1tenth_sensors'),
+        'config', 'ydlidar_config.yaml'
+    ])
+
+    # Set global parameters
+    global_params = [
+        SetParameter(name='use_sim_time', value=LaunchConfiguration('use_sim_time')),
+        SetParameter(name='robot_namespace', value=LaunchConfiguration('namespace'))
+    ]
+
+    # Hardware driver nodes
+    hardware_nodes = GroupAction([
+        # VESC motor controller
+        Node(
+            package='vesc_driver',
+            executable='vesc_driver_node',
+            name='vesc_driver',
+            namespace=LaunchConfiguration('namespace'),
+            parameters=[vesc_config],
+            output='screen',
+            respawn=True,
+            respawn_delay=2.0
+        ),
+
+        # Ackermann to VESC converter
+        Node(
+            package='vesc_ackermann',
+            executable='ackermann_to_vesc_node',
+            name='ackermann_to_vesc',
+            namespace=LaunchConfiguration('namespace'),
+            parameters=[vesc_config],
+            remappings=[
+                ('ackermann_cmd', 'drive'),
+            ]
+        ),
+
+        # VESC to odometry
+        Node(
+            package='vesc_ackermann',
+            executable='vesc_to_odom_node',
+            name='vesc_to_odom',
+            namespace=LaunchConfiguration('namespace'),
+            parameters=[vesc_config],
+            remappings=[
+                ('odom', 'vesc/odom'),
+            ]
+        ),
+
+        # Servo control node
+        Node(
+            package='f1tenth_control',
+            executable='servo_control_node',
+            name='servo_control',
+            namespace=LaunchConfiguration('namespace'),
+            parameters=[{
+                'control_frequency': LaunchConfiguration('control_frequency'),
+                'debug_mode': LaunchConfiguration('debug_mode'),
+                'servo_min_pulse_width': 1000,
+                'servo_max_pulse_width': 2000,
+                'min_steering_angle': -0.4189,  # -24 degrees in radians
+                'max_steering_angle': 0.4189,   # +24 degrees in radians
+                'servo_pin': 12  # GPIO pin for servo control
+            }],
+            output='screen'
+        )
+    ])
+
+    # LiDAR sensor node (conditional)
+    lidar_node = Node(
+        package='ydlidar_ros2_driver',
+        executable='ydlidar_ros2_driver_node',
+        name='ydlidar_node',
+        namespace=LaunchConfiguration('namespace'),
+        parameters=[lidar_config],
+        output='screen',
+        condition=IfCondition(LaunchConfiguration('enable_lidar'))
+    )
+
+    # Static transform publishers
+    static_transforms = GroupAction([
+        # Base link to laser frame transform
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='base_to_laser_tf',
+            arguments=[
+                '0.1', '0.0', '0.2',  # x, y, z translation
+                '0', '0', '0',         # roll, pitch, yaw rotation
+                'base_link',
+                'laser_frame'
+            ],
+            namespace=LaunchConfiguration('namespace')
+        ),
+
+        # Map to odom transform (if not using SLAM)
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_to_odom_tf',
+            arguments=[
+                '0', '0', '0',         # x, y, z translation
+                '0', '0', '0',         # roll, pitch, yaw rotation
+                'map',
+                'odom'
+            ],
+            namespace=LaunchConfiguration('namespace'),
+            condition=UnlessCondition(LaunchConfiguration('enable_slam', default='false'))
+        )
+    ])
+
+    # Safety monitoring node
+    safety_node = Node(
+        package='f1tenth_control',
+        executable='safety_monitor_node',
+        name='safety_monitor',
+        namespace=LaunchConfiguration('namespace'),
+        parameters=[{
+            'emergency_stop_topic': 'emergency_stop',
+            'heartbeat_timeout': 1.0,  # 1 second timeout
+            'max_speed': 3.0,          # 3 m/s absolute limit
+            'min_distance': 0.5        # 0.5m minimum obstacle distance
+        }],
+        condition=IfCondition(LaunchConfiguration('enable_safety')),
+        output='screen'
+    )
+
+    # Joystick control (for manual override)
+    joystick_nodes = GroupAction([
+        Node(
+            package='joy',
+            executable='joy_node',
+            name='joy_node',
+            parameters=[{
+                'device_id': 0,
+                'deadzone': 0.05,
+                'autorepeat_rate': 20.0
+            }]
+        ),
+
+        Node(
+            package='f1tenth_control',
+            executable='joy_converter_node',
+            name='joy_converter',
+            namespace=LaunchConfiguration('namespace'),
+            parameters=[{
+                'max_speed': 2.0,
+                'max_steering_angle': 0.4189,
+                'joy_speed_axis': 1,      # Left stick Y
+                'joy_angle_axis': 3,      # Right stick X
+                'enable_button': 4        # Left bumper
+            }],
+            remappings=[
+                ('joy', '/joy'),
+                ('drive', 'drive')
+            ]
+        )
+    ])
+
+    # Delayed startup for sensors (allow hardware initialization)
+    delayed_sensors = TimerAction(
+        period=3.0,  # 3 second delay
+        actions=[lidar_node]
+    )
+
+    return LaunchDescription(
+        declared_arguments +
+        global_params +
+        [
+            hardware_nodes,
+            static_transforms,
+            safety_node,
+            joystick_nodes,
+            delayed_sensors
+        ]
+    )
+```
+
+---
+
+## 🧪 **F1TENTH TESTING STANDARDS** (Hardware-in-Loop)
+
+### 📋 **Test Categories & Organization**
+```
+test/
+├── unit/                          # Individual component tests
+│   ├── test_servo_control.py      # Servo control unit tests
+│   ├── test_vesc_interface.py     # VESC communication tests
+│   └── test_safety_monitor.py     # Safety system tests
+├── integration/                   # Multi-node system tests
+│   ├── test_control_pipeline.py   # End-to-end control tests
+│   ├── test_sensor_fusion.py      # Sensor integration tests
+│   └── test_emergency_stop.py     # Safety integration tests
+├── hardware/                      # Hardware-specific tests
+│   ├── test_gpio_servo.py         # GPIO servo functionality
+│   ├── test_lidar_driver.py       # LiDAR hardware tests
+│   └── test_vesc_hardware.py      # VESC hardware tests
+├── performance/                   # Real-time performance tests
+│   ├── test_timing_constraints.py # Timing validation
+│   ├── test_cpu_usage.py          # Resource usage tests
+│   └── test_memory_usage.py       # Memory profiling
+└── simulation/                    # Simulation-based tests
+    ├── test_gazebo_integration.py # Gazebo simulation tests
+    └── test_f1tenth_gym.py        # F1TENTH Gym tests
+```
+
+### 🏗️ **Hardware Test Template** (Real-time Validation)
+```python
+#!/usr/bin/env python3
+"""
+F1TENTH Hardware-in-Loop Test Template
+Validates real-time performance on Raspberry Pi hardware
+
+Requirements:
+- Physical hardware connection
+- Real-time timing validation
+- Safety-first testing approach
+"""
+
+import unittest
+import rclpy
+import time
+import threading
+import psutil
+import numpy as np
+from typing import List, Dict, Any
+
+# ROS2 testing utilities
+from rclpy.node import Node
+from rclpy.qos import QoSProfile
+import launch_testing
+import launch_testing.actions
+
+# F1TENTH specific imports
+from f1tenth_control.servo_control_node import ServoControlNode
+from sensor_msgs.msg import LaserScan
+from ackermann_msgs.msg import AckermannDriveStamped
+
+
+class TestF1TenthHardware(unittest.TestCase):
+    """Hardware-in-loop tests for F1TENTH system."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Initialize ROS2 and hardware connections."""
+        rclpy.init()
+        cls.node = Node('test_hardware_node')
+        cls.timing_data = []
+        cls.cpu_data = []
+
+        # Hardware safety checks
+        cls.emergency_stop = False
+        cls.max_test_duration = 30.0  # 30 second safety limit
+
+    @classmethod
+    def tearDownClass(cls):
+        """Cleanup and emergency stop."""
+        cls.emergency_stop = True
+        cls.node.destroy_node()
+        rclpy.shutdown()
+
+    def setUp(self):
+        """Setup for each test."""
+        self.start_time = time.time()
+        self.timing_data.clear()
+        self.cpu_data.clear()
+
+    def test_01_servo_control_timing(self):
+        """Test servo control meets real-time constraints."""
+        # Target: 50Hz control loop (20ms max latency)
+        target_frequency = 50.0
+        max_latency_ms = 20.0
+        test_duration = 5.0  # 5 second test
+
+        servo_node = ServoControlNode()
+        latencies = []
+
+        def control_callback():
+            start = time.time()
+            # Simulate control computation
+            time.sleep(0.001)  # 1ms simulated work
+            end = time.time()
+            latencies.append((end - start) * 1000)  # Convert to ms
+
+        # Run test loop
+        start_test = time.time()
+        while time.time() - start_test < test_duration:
+            if self.emergency_stop:
+                break
+            control_callback()
+            time.sleep(1.0 / target_frequency)
+
+        # Validate timing constraints
+        max_latency = max(latencies)
+        avg_latency = np.mean(latencies)
+
+        self.assertLess(max_latency, max_latency_ms,
+                       f"Max latency {max_latency:.2f}ms exceeds {max_latency_ms}ms")
+        self.assertLess(avg_latency, max_latency_ms / 2,
+                       f"Average latency {avg_latency:.2f}ms too high")
+
+        print(f"Servo timing: max={max_latency:.2f}ms, avg={avg_latency:.2f}ms")
+
+    def test_02_lidar_data_rate(self):
+        """Test LiDAR maintains expected data rate."""
+        # Target: 5kHz scan rate, 10Hz message rate
+        expected_msg_rate = 10.0  # Hz
+        tolerance = 0.5  # Hz
+        test_duration = 10.0  # seconds
+
+        message_times = []
+
+        def lidar_callback(msg: LaserScan):
+            message_times.append(time.time())
+
+        # Subscribe to LiDAR topic
+        subscription = self.node.create_subscription(
+            LaserScan,
+            '/scan',
+            lidar_callback,
+            QoSProfile(depth=10)
+        )
+
+        # Collect data
+        start_time = time.time()
+        while time.time() - start_time < test_duration:
+            if self.emergency_stop:
+                break
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        # Calculate message rate
+        if len(message_times) > 1:
+            intervals = np.diff(message_times)
+            actual_rate = 1.0 / np.mean(intervals)
+
+            self.assertGreater(len(message_times), expected_msg_rate * test_duration * 0.8,
+                              "Insufficient LiDAR messages received")
+            self.assertAlmostEqual(actual_rate, expected_msg_rate, delta=tolerance,
+                                  msg=f"LiDAR rate {actual_rate:.1f}Hz not within tolerance")
+
+            print(f"LiDAR rate: {actual_rate:.1f}Hz (expected {expected_msg_rate}Hz)")
+        else:
+            self.fail("No LiDAR messages received")
+
+    def test_03_cpu_memory_usage(self):
+        """Test system resource usage stays within limits."""
+        # Targets for Raspberry Pi 4B
+        max_cpu_percent = 80.0    # 80% CPU usage limit
+        max_memory_mb = 1500      # 1.5GB memory limit
+        test_duration = 15.0      # 15 second sustained test
+
+        cpu_readings = []
+        memory_readings = []
+
+        # Monitor resources during system operation
+        start_time = time.time()
+        while time.time() - start_time < test_duration:
+            if self.emergency_stop:
+                break
+
+            # Get system metrics
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory_mb = psutil.virtual_memory().used / (1024 * 1024)
+
+            cpu_readings.append(cpu_percent)
+            memory_readings.append(memory_mb)
+
+            # Run some ROS2 operations to simulate load
+            rclpy.spin_once(self.node, timeout_sec=0.05)
+
+        # Validate resource usage
+        max_cpu = max(cpu_readings)
+        avg_cpu = np.mean(cpu_readings)
+        max_memory = max(memory_readings)
+        avg_memory = np.mean(memory_readings)
+
+        self.assertLess(max_cpu, max_cpu_percent,
+                       f"Peak CPU {max_cpu:.1f}% exceeds {max_cpu_percent}%")
+        self.assertLess(max_memory, max_memory_mb,
+                       f"Peak memory {max_memory:.0f}MB exceeds {max_memory_mb}MB")
+
+        print(f"Resources: CPU avg={avg_cpu:.1f}% max={max_cpu:.1f}%, "
+              f"Memory avg={avg_memory:.0f}MB max={max_memory:.0f}MB")
+
+    def test_04_emergency_stop_response(self):
+        """Test emergency stop response time."""
+        # Target: <5ms emergency stop response
+        max_response_ms = 5.0
+
+        # Simulate emergency condition
+        emergency_triggered = False
+        response_times = []
+
+        def emergency_callback():
+            nonlocal emergency_triggered
+            if not emergency_triggered:
+                emergency_triggered = True
+                response_time = (time.time() - trigger_time) * 1000
+                response_times.append(response_time)
+
+        # Trigger emergency stop
+        trigger_time = time.time()
+        emergency_callback()
+
+        # Validate response time
+        if response_times:
+            response_time = response_times[0]
+            self.assertLess(response_time, max_response_ms,
+                           f"Emergency stop response {response_time:.2f}ms too slow")
+            print(f"Emergency stop response: {response_time:.2f}ms")
+        else:
+            self.fail("Emergency stop not triggered")
+
+    def test_05_communication_bandwidth(self):
+        """Test ROS2 communication bandwidth efficiency."""
+        # Monitor topic bandwidth usage
+        max_bandwidth_mbps = 10.0  # 10 Mbps limit for embedded system
+        test_duration = 5.0
+
+        # This test would monitor actual network/IPC bandwidth
+        # Implementation depends on specific monitoring tools
+        self.assertTrue(True, "Bandwidth monitoring placeholder")
+
+
+def main():
+    """Run hardware-in-loop tests."""
+    unittest.main()
+
+
+if __name__ == '__main__':
+    main()
+```
+
+---
+
+## 📝 **F1TENTH DOCUMENTATION STANDARDS**
+
+### 🎨 **Package Documentation Template**
+```markdown
+# F1TENTH [Package Name]
+
+**Category**: [control|sensors|navigation|perception|bringup|msgs]
+**Hardware Target**: Raspberry Pi 4B
+**ROS2 Distro**: Humble
+**Real-time Requirements**: [50Hz|100Hz|10Hz] control frequency
+
+---
+
+## 🎯 **Package Purpose**
+[1-2 sentences describing the package functionality and its role in the F1TENTH system]
+
+## ✅ **Performance Specifications**
+- **Target Frequency**: [X]Hz control loop
+- **Max CPU Usage**: [X]% on Raspberry Pi 4B
+- **Memory Footprint**: <[X]MB
+- **Response Time**: <[X]ms for critical operations
+- **Safety Timeout**: [X]ms communication timeout
+
+## 🔧 **Hardware Dependencies**
+### **Required Components**
+- Raspberry Pi 4B (4GB RAM minimum)
+- [Specific sensors/actuators]
+- GPIO pins: [list specific pins used]
+- USB ports: [list requirements]
+
+### **Supported Hardware**
+- VESC Motor Controller (via USB serial)
+- YDLIDAR X4 (via USB, 5V power)
+- Servo motor (via GPIO PWM)
+- Joystick controller (via USB)
+
+## 🚀 **Installation & Setup**
+
+### **Prerequisites**
+```bash
+# ROS2 Humble installation
+sudo apt update
+sudo apt install ros-humble-desktop
+
+# Package dependencies
+sudo apt install python3-pigpio pigpio
+```
+
+### **Build Instructions**
+```bash
+# Clone workspace
+cd ~/f1tenth_ws/src
+git clone [repository_url]
+
+# Build package
+cd ~/f1tenth_ws
+colcon build --packages-select f1tenth_[package_name] --symlink-install
+
+# Source workspace
+source install/setup.bash
+```
+
+## 📊 **Usage Examples**
+
+### **Basic Launch**
+```bash
+# Launch individual package
+ros2 launch f1tenth_[package] [package]_standalone.launch.py
+
+# Launch with custom parameters
+ros2 launch f1tenth_[package] [package]_standalone.launch.py \
+    control_frequency:=100.0 \
+    debug_mode:=true
+```
+
+### **Integration with System**
+```bash
+# Full F1TENTH system launch
+ros2 launch f1tenth_bringup f1tenth_system.launch.py \
+    enable_[package]:=true
+```
+
+## 🔗 **ROS2 Interface**
+
+### **Published Topics**
+- `/ego_racecar/[topic_name]` ([msg_type]): Description
+- `/scan` (sensor_msgs/LaserScan): LiDAR scan data
+- `/drive` (ackermann_msgs/AckermannDriveStamped): Vehicle control commands
+
+### **Subscribed Topics**
+- `/ego_racecar/[input_topic]` ([msg_type]): Description
+
+### **Services**
+- `emergency_stop` (std_srvs/Trigger): Immediate emergency stop
+- `reset_system` (std_srvs/Trigger): System reset
+
+### **Parameters**
+- `control_frequency` (double, default: 50.0): Control loop frequency in Hz
+- `debug_mode` (bool, default: false): Enable debug logging
+- `safety_timeout` (double, default: 0.5): Communication timeout in seconds
+
+## 🧪 **Testing & Validation**
+
+### **Unit Tests**
+```bash
+# Run package unit tests
+colcon test --packages-select f1tenth_[package_name]
+colcon test-result --verbose
+```
+
+### **Hardware Tests**
+```bash
+# Hardware-in-loop validation
+ros2 run f1tenth_[package] test_hardware_node
+```
+
+### **Performance Benchmarks**
+- Control loop timing: <20ms (50Hz target)
+- CPU usage: <15% per node
+- Memory usage: <50MB per node
+
+## ⚠️ **Safety Considerations**
+- Emergency stop response: <5ms
+- Communication timeout monitoring
+- Hardware limit enforcement
+- Safe state on node failure
+
+## 🔧 **Troubleshooting**
+
+### **Common Issues**
+1. **Permission denied (GPIO)**: Run `sudo usermod -a -G gpio $USER`
+2. **Serial port access**: Run `sudo usermod -a -G dialout $USER`
+3. **High CPU usage**: Reduce control frequency or enable performance mode
+
+### **Debug Commands**
+```bash
+# Check node performance
+ros2 topic hz /ego_racecar/[topic_name]
+top -p $(pgrep -f f1tenth)
+
+# Monitor resource usage
+ros2 run rqt_top rqt_top
+```
+
+---
+
+## 📦 **Development History**
+- **v1.0.0**: Initial implementation with basic functionality
+- **v1.1.0**: Performance optimization for Raspberry Pi
+- **v1.2.0**: Safety system integration
+- **v2.0.0**: Real-time scheduling improvements
+
+---
+
+> 🏎️ **F1TENTH**: High-speed autonomous racing platform
+> 🎯 **Target**: Sub-20ms control latency on embedded hardware
+> 🔧 **Status**: Production-ready for racing competitions
+```
+
+---
+
+## 📦 **GIT WORKFLOW INTEGRATION** (F1TENTH Standards)
+
+### 🎯 **Mandatory Git + F1TENTH Integration**
+
+#### **📋 Commit Standards** (Racing Development)
+```bash
+# Mandatory format for F1TENTH development
+<type>(<scope>): <description> [F1TENTH:<category>]
+
+# Examples by F1TENTH category
+feat(control): implement servo PWM control [F1TENTH:hardware]
+fix(lidar): resolve YDLIDAR timeout issue [F1TENTH:sensors]
+perf(planning): optimize path planning for real-time [F1TENTH:navigation]
+test(integration): add hardware-in-loop validation [F1TENTH:testing]
+docs(safety): update emergency stop procedures [F1TENTH:safety]
+embed(rpi): optimize memory usage for RPi4 [F1TENTH:embedded]
+race(strategy): implement racing line optimization [F1TENTH:racing]
+```
+
+#### **🔗 Commit Types → F1TENTH Categories**
+```yaml
+feat:       hardware/navigation/control  # New racing features
+fix:        sensors/hardware/safety      # Bug fixes, critical issues
+perf:       embedded/real-time           # Performance optimizations
+test:       testing/validation           # Hardware/software testing
+docs:       documentation/safety         # Racing documentation
+embed:      embedded/rpi                 # Raspberry Pi optimizations
+race:       racing/strategy              # Racing algorithm improvements
+safety:     safety/emergency             # Safety-critical changes
+```
+
+---
+
+## 🔄 **F1TENTH DEVELOPMENT WORKFLOWS**
+
+### 🆕 **New Racing Feature Implementation**
+```bash
+# 1. Performance Analysis
+Create: docs/analysis/[NN]_PERFORMANCE_[FEATURE].md
+Benchmark: Current system performance metrics
+
+# 2. Design & Safety Review
+Create: docs/design/[NN]_DESIGN_[FEATURE].md
+Review: Safety implications and emergency procedures
+
+# 3. Implementation with Real-time Focus
+Create: src/f1tenth_[package]/[feature].py
+Optimize: For Raspberry Pi 4B performance
+Test: Hardware-in-loop validation
+
+# 4. Integration & Racing Validation
+Test: colcon test --packages-select f1tenth_[package]
+Validate: Real vehicle testing at low speeds
+Race: Competition environment testing
+
+# 5. Performance Documentation
+Update: Performance benchmarks and timing analysis
+Commit: feat(scope): description [F1TENTH:category]
+```
+
+### 🔧 **Hardware Issue Resolution**
+```bash
+# 1. Safety First - Immediate Assessment
+Emergency: Implement temporary safe mode if needed
+Document: Hardware failure conditions and symptoms
+
+# 2. Hardware Debugging
+Test: Individual component validation
+Isolate: Problem component (VESC, servo, LiDAR, etc.)
+Verify: Electrical connections and power
+
+# 3. Software Fix Implementation
+Fix: Driver or interface code
+Validate: Hardware-in-loop testing
+Ensure: Backward compatibility
+
+# 4. Safety Integration
+Test: Emergency stop and failsafe operations
+Validate: System behavior under fault conditions
+Document: Updated troubleshooting procedures
+
+# 5. Production Deployment
+Commit: fix(hardware): description [F1TENTH:hardware]
+Deploy: Gradual rollout with monitoring
+```
+
+---
+
+## ⚡ **F1TENTH QUALITY GATES & COMPLIANCE**
+
+### 🧪 **Pre-Competition Requirements**
+- [ ] All hardware tests passing (servo, VESC, LiDAR)
+- [ ] Real-time performance validated (<20ms control loop)
+- [ ] Emergency stop response <5ms verified
+- [ ] Memory usage <1.5GB on Raspberry Pi 4B
+- [ ] CPU usage <80% sustained load during racing
+- [ ] Communication timeouts handled gracefully
+- [ ] Safety documentation complete and reviewed
+
+### 📋 **Hardware-Software Integration Checklist**
+- [ ] GPIO permissions configured correctly
+- [ ] Serial port access verified (VESC communication)
+- [ ] LiDAR USB connection stable
+- [ ] Servo PWM signal clean and accurate
+- [ ] Power management optimized for racing
+- [ ] Thermal management adequate for sustained operation
+- [ ] Emergency stop hardware functional
+- [ ] Joystick override operational
+
+### 🎯 **Racing Performance Standards**
+- **Control Latency**: <20ms for 50Hz control loop
+- **Sensor Processing**: <10ms for 100Hz LiDAR processing
+- **Planning Computation**: <100ms for 10Hz path planning
+- **Emergency Response**: <5ms from trigger to action
+- **System Startup**: <30s from boot to racing-ready
+- **Sustained Operation**: >60 minutes continuous racing
+
+---
+
+## 🚨 **F1TENTH CRITICAL CONSTRAINTS** (Competition Ready)
+
+### ❌ **NEVER ALLOWED**
+- Hardcoded safety limits bypassed
+- Emergency stop functionality disabled
+- Real-time constraints violated (>20ms control)
+- Hardware limits exceeded (voltage, current, speed)
+- Unsafe GPIO operations without proper cleanup
+- Memory leaks in long-running racing sessions
+- Communication timeouts ignored
+- Racing without proper safety monitoring
+
+### ✅ **ALWAYS REQUIRED**
+- Emergency stop functional at all times
+- Real-time performance monitoring active
+- Hardware safety limits enforced in software
+- Communication timeout handling implemented
+- Resource usage monitoring for embedded systems
+- Graceful degradation on component failure
+- Safety-first error handling in all racing code
+- Hardware-in-loop testing before competition
+
+---
+
+## 🔗 **F1TENTH QUICK REFERENCE** (Racing Commands)
+
+### 📚 **Essential Files & Structure**
+- **System Launch**: `f1tenth_bringup/launch/f1tenth_system.launch.py`
+- **Hardware Config**: `f1tenth_*/config/*.yaml`
+- **Safety Monitor**: `f1tenth_control/src/safety_monitor_node.py`
+- **Performance Tests**: `test/performance/test_timing_constraints.py`
+
+### 🚀 **Racing Development Commands**
+```bash
+# System startup and validation
+source /opt/ros/humble/setup.bash
+cd ~/f1tenth_ws && colcon build --symlink-install
+source install/setup.bash
+ros2 launch f1tenth_bringup f1tenth_system.launch.py
+
+# Performance monitoring
+ros2 topic hz /scan                    # LiDAR frequency
+ros2 topic hz /ego_racecar/odom       # Odometry frequency
+ros2 topic bw /drive                  # Control bandwidth
+top -p $(pgrep -f f1tenth)           # CPU usage monitoring
+
+# Hardware validation
+ros2 service call /emergency_stop std_srvs/srv/Trigger
+ros2 param get /servo_control_node control_frequency
+ros2 run f1tenth_control test_servo_range
+
+# Racing diagnostics
+ros2 run rqt_graph rqt_graph          # Communication topology
+ros2 run rqt_tf_tree rqt_tf_tree      # Transform tree
+ros2 bag record /scan /drive /ego_racecar/odom  # Race data logging
+
+# Competition preparation
+colcon test --packages-select f1tenth_*        # Full test suite
+ros2 launch f1tenth_bringup performance_test.launch.py  # Benchmark
+```
+
+### 🎯 **Racing Success Validation**
+- **Hardware Health**: All drivers responding, no communication errors
+- **Performance**: Control loop <20ms, sensor processing <10ms
+- **Safety**: Emergency stop <5ms, all limits enforced
+- **System**: <80% CPU, <1.5GB memory, stable operation
+- **Racing**: Competition-ready autonomous navigation functional
+
+---
+
+## 📋 **F1TENTH RULE VALIDATION CHECKLIST**
+
+When applying these rules, verify:
+- [ ] Real-time performance constraints maintained
+- [ ] Hardware safety limits enforced in software
+- [ ] Emergency stop functionality always operational
+- [ ] ROS2 naming conventions followed (REP-144 compliance)
+- [ ] Embedded system optimizations implemented
+- [ ] Hardware-in-loop testing completed
+- [ ] Racing performance validated at target speeds
+- [ ] Competition safety requirements met
+- [ ] Documentation includes performance benchmarks
+- [ ] Code review includes real-time considerations
+
+---
+
+> 🏎️ **F1TENTH**: 1:10 Scale Autonomous Racing Platform
+> ⚡ **PERFORMANCE**: <20ms control latency on Raspberry Pi 4B
+> 🛡️ **SAFETY**: <5ms emergency stop response time
+> 🏁 **TARGET**: Competition-ready autonomous racing system

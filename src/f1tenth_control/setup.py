@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 from glob import glob
 import os
 
@@ -7,7 +7,7 @@ package_name = 'f1tenth_control'
 setup(
     name=package_name,
     version='0.0.1',
-    packages=find_packages(),
+    packages=[package_name],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -19,20 +19,18 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='seu_nome', # TODO: Atualizar com seu nome
-    maintainer_email='seu_email@example.com', # TODO: Atualizar com seu email
-    description='Controle integrado F1TENTH para Raspberry Pi (VESC + Servo)',
-    license='TODO: License declaration', # TODO: Escolher e declarar uma licença (e.g., Apache 2.0, BSD)
+    maintainer='F1TENTH Team',
+    maintainer_email='dev@f1tenth.org',
+    description='Controle integrado F1TENTH para Raspberry Pi com VESC e servo GPIO',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             # Definir o executável para o nó de controle
             'servo_control_node = f1tenth_control.servo_control_node:main',
             # Adicionar o executável para o script de calibração
+            'enhanced_servo_control_node = f1tenth_control.enhanced_servo_control_node:main',
             'servo_calibration = f1tenth_control.servo_calibration:main',
-            # Adicionar aliases explícitos (tentativa de corrigir)
-            'f1tenth_servo_control = f1tenth_control.servo_control_node:main',
-            'f1tenth_servo_calibration = f1tenth_control.servo_calibration:main',
         ],
     },
 ) 

@@ -133,6 +133,7 @@ venv.bak/
 
 # ROS specific files
 logs/
+log/
 build/
 install/
 devel/
@@ -150,4 +151,4 @@ devel/
 # config/
 # data/
 
-# Add any other specific project files or configurations here 
+# Add any other specific project files or configurations here

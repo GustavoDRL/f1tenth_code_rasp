@@ -1,0 +1,56 @@
+enhanced_servo_control_node:
+  ros__parameters:
+    # ===== CONFIGURAÇÃO GPIO =====
+    servo_gpio_pin: 18                    # Pino GPIO BCM para PWM do servo
+    servo_pwm_frequency: 50               # Frequência PWM (Hz) - padrão servos RC
+    servo_min_pulse_width: 1000           # Largura mínima pulso (µs) - calibrar!
+    servo_max_pulse_width: 2000           # Largura máxima pulso (µs) - calibrar!
+    
+    # ===== LIMITES FÍSICOS =====
+    max_steering_angle: 0.4               # Ângulo máximo direção (rad) ~23°
+    min_steering_angle: -0.4              # Ângulo mínimo direção (rad) ~-23°
+    max_angular_velocity: 2.0             # Velocidade angular máxima (rad/s)
+    angle_tolerance: 0.01                 # Tolerância posicionamento (rad)
+    
+    # ===== CONTROLE TEMPORAL =====
+    control_frequency: 100.0              # Frequência loop controle (Hz)
+    command_timeout: 1.0                  # Timeout comandos (s) para emergência
+    
+    # ===== CONTROLADOR PID =====
+    enable_pid: true                      # Habilitar controle PID suavizado
+    pid_kp: 0.8                          # Ganho proporcional
+    pid_ki: 0.1                          # Ganho integral  
+    pid_kd: 0.05                         # Ganho derivativo
+    
+    # ===== SEGURANÇA =====
+    enable_safety_limits: true           # Habilitar limitadores de segurança
+    
+    # ===== FRAMES ROS2 =====
+    odom_frame: "odom"                   # Frame referência odometria
+    base_frame: "base_link"              # Frame base do robô
+    
+    # ===== TÓPICOS ROS2 =====
+    drive_topic: "/drive"                # Comandos Ackermann entrada
+    odom_topic: "/ego_racecar/odom"      # Odometria saída (padrão F1TENTH)
+    use_vesc_odom: true                  # Usar odometria do VESC
+    vesc_odom_topic: "/odom"             # Tópico odometria VESC original
+    
+    # ===== CALIBRAÇÃO ESPECÍFICA POR SERVO =====
+    # Exemplo para servo SG90 (micro servo comum):
+    # servo_min_pulse_width: 500
+    # servo_max_pulse_width: 2400
+    
+    # Exemplo para servo MG996R (servo padrão):
+    # servo_min_pulse_width: 1000  
+    # servo_max_pulse_width: 2000
+    
+    # Exemplo para servo de alta precisão:
+    # servo_min_pulse_width: 900
+    # servo_max_pulse_width: 2100
+    
+    # ===== PARÂMETROS EXPERIMENTAIS =====
+    # Descomente e ajuste conforme necessário:
+    # servo_center_pulse_width: 1500     # PWM para posição central (µs)
+    # pid_max_integral: 0.5              # Limite anti-windup PID
+    # emergency_stop_angle: 0.0          # Ângulo para parada emergência
+    # diagnostic_rate: 1.0               # Taxa publicação diagnósticos (Hz) 
