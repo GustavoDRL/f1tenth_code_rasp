@@ -36,6 +36,7 @@ Este projeto implementa um sistema completo de controle para veículos autônomo
 ### 🔬 **DESENVOLVIMENTO E EXTENSÕES**
 - [`13_ROADMAP_DESENVOLVIMENTO.md`](./desenvolvimento/13_ROADMAP_DESENVOLVIMENTO.md) - Plano de desenvolvimento futuro
 - [`20_PLANO_CORRECAO_PROBLEMAS_TECNICOS.md`](./desenvolvimento/20_PLANO_CORRECAO_PROBLEMAS_TECNICOS.md) - **Plano detalhado de correções**
+- [`21_REGRAS_WORKFLOW_SSH_RASPBERRY.md`](./21_REGRAS_WORKFLOW_SSH_RASPBERRY.md) - **REGRAS OBRIGATÓRIAS - Workflow SSH/Raspberry Pi**
 - [`14_INTEGRACAO_LIDAR_PLANEJADA.md`](./desenvolvimento/14_INTEGRACAO_LIDAR_PLANEJADA.md) - Integração LiDAR pendente
 - [`15_OTIMIZACOES_PERFORMANCE.md`](./desenvolvimento/15_OTIMIZACOES_PERFORMANCE.md) - Otimizações recomendadas
 - [`16_EXTENSOES_NAVEGACAO_AUTONOMA.md`](./desenvolvimento/16_EXTENSOES_NAVEGACAO_AUTONOMA.md) - Extensões para navegação
