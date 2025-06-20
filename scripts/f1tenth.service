@@ -1,0 +1,26 @@
+[Unit]
+Description=F1TENTH Autonomous Racing System
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/disney/Documents/f1tenth_code_rasp/scripts/f1tenth_startup.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+User=root
+Group=root
+
+# Configurações de ambiente
+Environment=HOME=/home/disney
+Environment=USER=disney
+Environment=ROS_DOMAIN_ID=0
+Environment=ROS_LOCALHOST_ONLY=1
+
+# Restart em caso de falha
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 
