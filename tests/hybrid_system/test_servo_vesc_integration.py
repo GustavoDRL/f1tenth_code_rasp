@@ -373,7 +373,7 @@ class TestIntegratedSystemOperation:
         
         # Act - Simular republicação (servo_control_node.py)
         republication_success = True  # Simulado
-        topic_remapping = "/odom" → "/ego_racecar/odom"  # String representation
+        topic_remapping = "/odom -> /ego_racecar/odom"  # String representation
         
         # Simular publisher
         pub = mock_ros_node.create_publisher.return_value

@@ -192,7 +192,7 @@ class TestNodeLifecycle:
         # Arrange & Act - simular inicialização do ServoControlNode
 
         # 1. Configurar parâmetros
-        mock_ros_node.declare_parameters.return_value = None
+        mock_ros_node.declare_parameters()  # Call the method to trigger 'called'
 
         # 2. Inicializar GPIO
         gpio_init_success = mock_pigpio.connected
