@@ -1,12 +1,19 @@
 /vesc_driver:
   ros__parameters:
-    port: /dev/ttyACM0  # Update this to your device path
-    servo_min: 0.0
-    servo_max: 1.0
-    throttle_min: -1.0
-    throttle_max: 1.0
-    throttle_to_erpm_gain: 3000.0
-    use_servo_cmd: true
+    port: /dev/ttyACM0
+    servo_min: 0.15
+    servo_max: 0.85
+    duty_cycle_min: -0.5
+    duty_cycle_max: 0.5
+    current_min: -30.0
+    current_max: 30.0
+    brake_min: 0.0
+    brake_max: 200000.0
+    speed_min: -30000.0
+    speed_max: 30000.0
+    position_min: 0.0
+    position_max: 1000000.0
+    use_servo_cmd: false  # Desabilitar servo via VESC
     publish_odom: true
     publish_tf: true
     odom_frame: odom
