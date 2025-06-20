@@ -6,6 +6,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource, Any
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition, UnlessCondition
 from ament_index_python.packages import get_package_share_directory
 import os
 
@@ -94,7 +95,7 @@ def generate_launch_description():
         parameters=[enhanced_config_file],
         output='screen',
         emulate_tty=True,
-        condition=LaunchConfiguration('use_enhanced_control')
+        condition=IfCondition(LaunchConfiguration('use_enhanced_control'))
     )
     
     # ===== 6. CONTROLE BÁSICO DO SERVO (FALLBACK) =====
@@ -105,7 +106,7 @@ def generate_launch_description():
         parameters=[os.path.join(f1tenth_control_dir, 'config', 'control_params.yaml')],
         output='screen',
         emulate_tty=True,
-        condition='unless $(var use_enhanced_control)'
+        condition=UnlessCondition(LaunchConfiguration('use_enhanced_control'))
     )
     
     # ===== 7. TRANSFORMAÇÃO ESTÁTICA BASE -> LASER =====
@@ -128,27 +129,27 @@ def generate_launch_description():
     #     PythonLaunchDescriptionSource(
     #         os.path.join(get_package_share_directory('ydlidar_ros2_driver'), 'launch', 'ydlidar_launch.py')
     #     ),
-    #     condition=LaunchConfiguration('enable_lidar')
+    #     condition=IfCondition(LaunchConfiguration('enable_lidar'))
     # )
     
     # ===== 9. DIAGNÓSTICOS =====
-    robot_state_publisher = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        name='robot_state_publisher',
-        parameters=[{
-            'use_sim_time': False,
-            'publish_frequency': 30.0
-        }],
-        condition=LaunchConfiguration('enable_diagnostics')
-    )
+    # robot_state_publisher = Node(
+    #     package='robot_state_publisher',
+    #     executable='robot_state_publisher',
+    #     name='robot_state_publisher',
+    #     parameters=[{
+    #         'use_sim_time': False,
+    #         'publish_frequency': 30.0
+    #     }],
+    #     condition=IfCondition(LaunchConfiguration('enable_diagnostics'))
+    # )
     
     # ===== 10. MONITOR DE SISTEMA =====
-    system_monitor = ExecuteProcess(
-        cmd=['ros2', 'run', 'rqt_robot_monitor', 'rqt_robot_monitor'],
-        output='screen',
-        condition=LaunchConfiguration('enable_diagnostics')
-    )
+    # system_monitor = ExecuteProcess(
+    #     cmd=['ros2', 'run', 'rqt_robot_monitor', 'rqt_robot_monitor'],
+    #     output='screen',
+    #     condition=IfCondition(LaunchConfiguration('enable_diagnostics'))
+    # )
     
     # ===== DESCRIÇÃO COMPLETA =====
     return LaunchDescription([
@@ -173,7 +174,7 @@ def generate_launch_description():
         # Percepção (quando disponível)
         # lidar_launch,                  # 7. Lidar
         
-        # Diagnósticos e monitoramento
-        robot_state_publisher,           # 8. Publisher de estado
+        # Diagnósticos e monitoramento (comentados para simplicidade)
+        # robot_state_publisher,         # 8. Publisher de estado
         # system_monitor,                # 9. Monitor de sistema
     ]) 
