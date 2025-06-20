@@ -5,7 +5,7 @@ Testa os valores descobertos empiricamente
 """
 
 try:
-    import pigpio
+    import pigpio  # noqa: F401
 except ImportError:
     print("Erro: pigpio não instalado")
     exit(1)
@@ -81,6 +81,10 @@ def test_calibrated_values():
         print("GPIO liberado.")
         
     return True
+
+def main(args=None):
+    """Entry point para ROS2"""
+    return test_calibrated_values()
 
 if __name__ == "__main__":
     test_calibrated_values() 
