@@ -1,11 +1,11 @@
 #!/bin/bash
-# Script de teste F1TENTH - Validação sem travamento
-# Testa componentes de forma não-bloqueante
+# Script de teste F1TENTH - Teste simples do servo
+# Move roda: centro → esquerda → direita → fim
 
 set -e
 
-echo "🧪 F1TENTH Test Script"
-echo "======================"
+echo "🧪 F1TENTH Servo Test"
+echo "====================="
 
 # Verificar se estamos no workspace
 if [ ! -f "src/f1tenth_control/package.xml" ]; then
@@ -24,77 +24,70 @@ else
     exit 1
 fi
 
-# Teste 1: Verificar executáveis
-echo ""
-echo "📋 Teste 1: Verificando executáveis..."
-EXECUTABLES=("servo_control_node" "enhanced_servo_control_node" "servo_calibration")
-for exe in "${EXECUTABLES[@]}"; do
-    if [ -f "install/f1tenth_control/lib/f1tenth_control/$exe" ]; then
-        echo "  ✅ $exe encontrado"
-    else
-        echo "  ❌ $exe não encontrado"
+# Verificar se pigpiod está rodando
+echo "🔍 Verificando pigpiod..."
+if ! systemctl is-active --quiet pigpiod 2>/dev/null; then
+    echo "⚠️  Iniciando pigpiod..."
+    sudo systemctl start pigpiod
+    sleep 2
+fi
+
+# Iniciar nó de controle em background
+echo "🚀 Iniciando sistema de controle..."
+ros2 run f1tenth_control servo_control_node &
+CONTROL_PID=$!
+
+# Aguardar nó inicializar
+echo "⏳ Aguardando inicialização (3s)..."
+sleep 3
+
+# Função para parar tudo ao sair
+cleanup() {
+    echo ""
+    echo "🛑 Parando sistema..."
+    if [ ! -z "$CONTROL_PID" ]; then
+        kill $CONTROL_PID 2>/dev/null || true
     fi
-done
+    # Comando final para centro e parada
+    ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
+        "{drive: {steering_angle: 0.0, speed: 0.0}}" --once 2>/dev/null || true
+    echo "✅ Teste finalizado"
+}
 
-# Teste 2: ROS2 Package Discovery
-echo ""
-echo "📋 Teste 2: ROS2 Package Discovery..."
-if ros2 pkg list | grep -q "f1tenth_control"; then
-    echo "  ✅ Pacote f1tenth_control reconhecido"
-else
-    echo "  ❌ Pacote não reconhecido"
-fi
-
-# Teste 3: Executáveis ROS2
-echo ""
-echo "📋 Teste 3: Executáveis ROS2..."
-if ros2 pkg executables f1tenth_control | grep -q "servo_control_node"; then
-    echo "  ✅ servo_control_node registrado"
-else
-    echo "  ❌ servo_control_node não registrado"
-fi
-
-# Teste 4: pigpiod Status
-echo ""
-echo "📋 Teste 4: pigpiod Status..."
-if systemctl is-active --quiet pigpiod 2>/dev/null; then
-    echo "  ✅ pigpiod ativo"
-elif command -v pigpiod >/dev/null 2>&1; then
-    echo "  ⚠️  pigpiod instalado mas não ativo"
-    echo "     Execute: sudo systemctl start pigpiod"
-else
-    echo "  ❌ pigpiod não instalado"
-fi
-
-# Teste 5: Launch file syntax
-echo ""
-echo "📋 Teste 5: Launch file syntax..."
-if python3 -m py_compile src/f1tenth_control/launch/f1tenth_control.launch.py 2>/dev/null; then
-    echo "  ✅ Launch file syntax OK"
-else
-    echo "  ❌ Launch file com erro de sintaxe"
-fi
-
-# Teste 6: Serviço systemd
-echo ""
-echo "📋 Teste 6: Serviço systemd..."
-if systemctl is-enabled --quiet f1tenth.service 2>/dev/null; then
-    if systemctl is-active --quiet f1tenth.service 2>/dev/null; then
-        echo "  ✅ Serviço f1tenth ativo e habilitado"
-    else
-        echo "  ⚠️  Serviço habilitado mas não ativo"
-        echo "     Status: $(systemctl is-active f1tenth.service 2>/dev/null || echo 'failed')"
-    fi
-else
-    echo "  ❌ Serviço não encontrado ou não habilitado"
-fi
+# Capturar sinais para cleanup
+trap cleanup EXIT INT TERM
 
 echo ""
-echo "📋 Teste Manual Sugerido:"
-echo "   1. Start pigpiod: sudo systemctl start pigpiod"
-echo "   2. Test launch: ros2 launch f1tenth_control f1tenth_control.launch.py"
-echo "   3. Test servo: ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \\"
-echo "      \"{drive: {steering_angle: 0.1, speed: 0.0}}\" --once"
+echo "🎯 Iniciando teste do servo..."
+echo "==============================="
+
+# 1. Centro (posição neutra)
+echo "1️⃣  Movendo para CENTRO..."
+ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
+    "{drive: {steering_angle: 0.0, speed: 0.0}}" --once
+sleep 2
+
+# 2. Esquerda
+echo "2️⃣  Movendo para ESQUERDA..."
+ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
+    "{drive: {steering_angle: 0.3, speed: 0.0}}" --once
+sleep 2
+
+# 3. Direita  
+echo "3️⃣  Movendo para DIREITA..."
+ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
+    "{drive: {steering_angle: -0.3, speed: 0.0}}" --once
+sleep 2
+
+# 4. Centro novamente
+echo "4️⃣  Retornando ao CENTRO..."
+ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
+    "{drive: {steering_angle: 0.0, speed: 0.0}}" --once
+sleep 1
+
 echo ""
-echo "🔍 Para ver logs do serviço:"
-echo "   sudo journalctl -u f1tenth.service -f" 
+echo "✅ Teste do servo concluído!"
+echo "   Se você viu a roda se mover, o sistema está funcionando!"
+echo ""
+
+# Cleanup será chamado automaticamente pelo trap 
