@@ -45,6 +45,25 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marca testes que demoram para executar"
     )
+    # Adicionar marcadores específicos usados nos testes
+    config.addinivalue_line(
+        "markers", "unit: marca testes unitários"
+    )
+    config.addinivalue_line(
+        "markers", "joy_converter: marca testes do conversor de joystick"
+    )
+    config.addinivalue_line(
+        "markers", "servo: marca testes do controle de servo"
+    )
+    config.addinivalue_line(
+        "markers", "ros_communication: marca testes de comunicação ROS2"
+    )
+    config.addinivalue_line(
+        "markers", "latency: marca testes de latência"
+    )
+    config.addinivalue_line(
+        "markers", "realtime: marca testes de tempo real"
+    )
 
 def pytest_collection_modifyitems(config, items):
     """Modifica a coleta de testes para adicionar marcadores automáticos."""
