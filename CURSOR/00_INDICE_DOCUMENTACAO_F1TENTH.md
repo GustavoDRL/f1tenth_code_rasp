@@ -1,9 +1,9 @@
 # 📚 **ÍNDICE COMPLETO - DOCUMENTAÇÃO F1TENTH**
 
 **Projeto**: F1TENTH Autonomous Racing System
-**Versão**: 2.0.0 - **SISTEMA OPERACIONAL COMPLETO**
-**Status**: 🎉 **FASE 1 CONCLUÍDA - MARCO ATINGIDO**
-**Última Atualização**: 2025-06-20 16:50 UTC-3
+**Versão**: 2.1.0 - **MOTOR VESC FUNCIONANDO**
+**Status**: 🎉 **MOTOR + SERVO OPERACIONAIS - MARCO CRÍTICO**
+**Última Atualização**: 2025-06-20 15:15 UTC-3
 
 ---
 
@@ -49,7 +49,8 @@ analises/
 ├── 02_ANALISE_PACOTES_ROS2.md         📦 Análise pacotes ROS2
 ├── 03_ANALISE_FLUXO_COMUNICACAO.md    📡 Fluxo de comunicação
 ├── 04_RELATORIO_REVIEW_TECNICO_CODIGO.md 🧪 Review técnico de código
-└── 05_CALIBRACAO_SERVO_DESCOBERTAS.md 🎯 Descobertas calibração servo
+├── 05_CALIBRACAO_SERVO_DESCOBERTAS.md 🎯 Descobertas calibração servo
+└── 06_RESOLUCAO_PROBLEMAS_VESC.md     ✅ Resolução completa VESC + Motor funcionando
 ```
 
 ### **🚀 DESENVOLVIMENTO E ROADMAP**

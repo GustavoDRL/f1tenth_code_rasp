@@ -1,25 +1,26 @@
 # 📊 **STATUS GERAL DO PROJETO F1TENTH**
 
-**Última Atualização**: 2025-06-20 16:30 UTC-3
-**Versão do Sistema**: 2.0.0 - **SISTEMA COMPLETO E OPERACIONAL**
-**Plataforma**: Raspberry Pi 4B + ROS2 Humble
-**Status Geral**: 🎉 **100% OPERACIONAL - MARCO ATINGIDO!**
+**Última Atualização**: 2025-06-20 15:15 UTC-3
+**Versão do Sistema**: 2.1.0 - **MOTOR VESC FUNCIONANDO**
+**Plataforma**: Raspberry Pi 4B + ROS2 Humble + VESC 6.2
+**Status Geral**: 🎉 **MOTOR + SERVO OPERACIONAIS - MARCO CRÍTICO ATINGIDO!**
 
 ---
 
 ## 🎯 **RESUMO EXECUTIVO**
 
-O projeto F1TENTH atingiu um **marco histórico**: **sistema base 100% funcional e testado** com todos os componentes validados em hardware real. O sistema está operacional, com comunicação ROS2 perfeita, controle de hardware validado e testes automatizados funcionais.
+O projeto F1TENTH atingiu um **marco crítico**: **motor VESC 100% funcional e testado** com movimentação real validada em hardware. O sistema agora tem controle completo de motor + servo, com comunicação ROS2 perfeita e resposta física confirmada aos comandos.
 
-### **🏆 CONQUISTAS PRINCIPAIS - TODAS CONCLUÍDAS**
+### **🏆 CONQUISTAS PRINCIPAIS - MARCO MOTOR ATINGIDO**
 ✅ **Sistema ROS2**: Completamente funcional e otimizado
 ✅ **Hardware GPIO**: Servo controlando perfeitamente via GPIO 18  
-✅ **VESC Integration**: Motor controller conectado e operacional
+✅ **VESC Integration**: **Motor controller FUNCIONANDO COM MOVIMENTO REAL**
+✅ **Motor Control**: **Motor gira e para via comandos ROS2 duty_cycle**
 ✅ **Comunicação**: Tópicos ROS2 funcionando em tempo real
-✅ **Odometria**: Publicação em `/ego_racecar/odom` ativa e precisa
+✅ **Configuração VESC**: Limites corrigidos (-0.5 a +0.5 duty cycle)
 ✅ **Controle Manual**: Joystick + conversores 100% operacionais
 ✅ **Scripts Automatizados**: Build, teste e deploy funcionais
-✅ **Testes Validados**: Movimento centro→esquerda→direita→centro confirmado
+✅ **Testes Validados**: Servo movimento + **Motor movimento** confirmados
 
 ---
 
@@ -31,7 +32,7 @@ O projeto F1TENTH atingiu um **marco histórico**: **sistema base 100% funcional
 | **🔧 Hardware Setup** | 🟢 Operacional | 100% | RPi4B + GPIO + USB devices validados |
 | **⚙️ ROS2 Workspace** | 🟢 Operacional | 100% | Build, install, executáveis 100% funcionais |
 | **🎮 Servo Control** | 🟢 Operacional | 100% | Calibração descoberta e aplicada |
-| **🚗 VESC Motor** | 🟢 Operacional | 100% | Comunicação e controle perfeitos |
+| **🚗 VESC Motor** | 🟢 Operacional | 100% | Motor funcional - movimenta e para via ROS2 |
 | **📡 Comunicação** | 🟢 Operacional | 100% | Tópicos ROS2 em tempo real |
 | **🎯 Odometria** | 🟢 Operacional | 100% | TF transforms publicando corretamente |
 | **🕹️ Joystick Control** | 🟢 Operacional | 100% | Interface manual validada |
