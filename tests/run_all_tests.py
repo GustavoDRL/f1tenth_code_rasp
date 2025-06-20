@@ -19,7 +19,7 @@ import time
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional
+
 
 class F1TenthTestRunner:
     """Executor de testes para o sistema F1tenth com relatórios detalhados."""
@@ -30,6 +30,7 @@ class F1TenthTestRunner:
         self.results = {
             'unit': {'passed': 0, 'failed': 0, 'errors': []},
             'integration': {'passed': 0, 'failed': 0, 'errors': []},
+            'hybrid_system': {'passed': 0, 'failed': 0, 'errors': []},
             'performance': {'passed': 0, 'failed': 0, 'errors': []},
             'hardware': {'passed': 0, 'failed': 0, 'errors': []}
         }
@@ -40,7 +41,8 @@ class F1TenthTestRunner:
     def setup_environment(self):
         """Configura ambiente para execução dos testes."""
         os.environ['PYTHONPATH'] = str(self.test_dir.parent / 'src')
-        os.environ['F1TENTH_TEST_MODE'] = os.getenv('F1TENTH_TEST_MODE', 'simulation')
+        test_mode = os.getenv('F1TENTH_TEST_MODE', 'simulation')
+        os.environ['F1TENTH_TEST_MODE'] = test_mode
         os.environ['ROS_DOMAIN_ID'] = os.getenv('ROS_DOMAIN_ID', '0')
 
         print("🔧 Configuração do Ambiente:")
@@ -129,7 +131,8 @@ class F1TenthTestRunner:
             else:
                 print(f"   ❌ {category.upper()} - Alguns testes falharam")
                 if result.stdout:
-                    print("   STDOUT:", result.stdout[-500:])  # Últimas 500 chars
+                    stdout_tail = result.stdout[-500:]  # Últimas 500 chars
+                    print("   STDOUT:", stdout_tail)
                 if result.stderr:
                     print("   STDERR:", result.stderr[-500:])
                 return False
@@ -143,7 +146,7 @@ class F1TenthTestRunner:
             self.results[category]['errors'].append(str(e))
             return False
 
-    def parse_test_results(self, category: str, result: subprocess.CompletedProcess, execution_time: float):
+    def parse_test_results(self, category: str, result, execution_time: float):
         """Extrai informações dos resultados dos testes."""
         output = result.stdout
 
@@ -164,8 +167,11 @@ class F1TenthTestRunner:
 
         # Extrair erros específicos
         if result.returncode != 0:
-            error_lines = [line for line in output.split('\n') if 'FAILED' in line or 'ERROR' in line]
-            self.results[category]['errors'].extend(error_lines[:5])  # Máximo 5 erros
+            lines = output.split('\n')
+            error_lines = [line for line in lines 
+                          if 'FAILED' in line or 'ERROR' in line]
+            max_errors = 5  # Máximo 5 erros
+            self.results[category]['errors'].extend(error_lines[:max_errors])
 
     def check_hardware_availability(self) -> bool:
         """Verifica se o hardware está disponível para testes."""
@@ -178,7 +184,7 @@ class F1TenthTestRunner:
                 content = f.read()
                 if 'Raspberry Pi' not in content:
                     return False
-        except:
+        except (IOError, OSError):
             return False
 
         # Verificar GPIO e pigpio
@@ -188,7 +194,7 @@ class F1TenthTestRunner:
             if pi.connected:
                 pi.stop()
                 return True
-        except:
+        except (ImportError, Exception):
             pass
 
         return False
@@ -210,7 +216,11 @@ class F1TenthTestRunner:
         print(f"🧪 Total de Testes: {total_tests}")
         print(f"✅ Passaram: {total_passed}")
         print(f"❌ Falharam: {total_failed}")
-        print(f"📈 Taxa de Sucesso: {(total_passed/total_tests*100):.1f}%" if total_tests > 0 else "N/A")
+        if total_tests > 0:
+            success_rate = (total_passed/total_tests*100)
+            print(f"📈 Taxa de Sucesso: {success_rate:.1f}%")
+        else:
+            print("📈 Taxa de Sucesso: N/A")
         print()
 
         # Detalhes por categoria
@@ -221,20 +231,22 @@ class F1TenthTestRunner:
                 print(f"   ❌ Falharam: {results['failed']}")
 
                 if results['errors']:
-                    print(f"   🔍 Erros principais:")
+                    print("   🔍 Erros principais:")
                     for error in results['errors'][:3]:
                         print(f"      • {error}")
                 print()
 
         # Salvar relatório JSON
-        report_file = self.test_dir / f"test_report_{self.start_time.strftime('%Y%m%d_%H%M%S')}.json"
+        timestamp_str = self.start_time.strftime('%Y%m%d_%H%M%S')
+        report_file = self.test_dir / f"test_report_{timestamp_str}.json"
         report_data = {
             'timestamp': self.start_time.isoformat(),
             'duration': str(total_time),
             'total_tests': total_tests,
             'total_passed': total_passed,
             'total_failed': total_failed,
-            'success_rate': (total_passed/total_tests*100) if total_tests > 0 else 0,
+            'success_rate': ((total_passed/total_tests*100) 
+                            if total_tests > 0 else 0),
             'categories': self.results
         }
 
@@ -266,6 +278,7 @@ class F1TenthTestRunner:
         categories = [
             ('unit', False),           # Obrigatório
             ('integration', False),    # Obrigatório
+            ('hybrid_system', False),  # Obrigatório - Sistema híbrido
             ('performance', True),     # Opcional
         ]
 

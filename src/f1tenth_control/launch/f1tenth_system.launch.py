@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Launch file corrigido para sistema F1TENTH híbrido
+Launch file para sistema F1TENTH híbrido
 Arquitetura: VESC (motor) + GPIO Raspberry (servo)
 
 CORREÇÃO: Remapeamento correto /drive -> /ackermann_cmd
@@ -10,16 +10,14 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     GroupAction,
-    IncludeLaunchDescription,
     TimerAction
 )
-from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch_ros.actions import Node, SetParameter
-from launch_ros.substitutions import FindPackageShare
-from launch.launch_description_sources import PythonLaunchDescriptionSource, AnyLaunchDescriptionSource
+from launch.conditions import IfCondition
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os
+
 
 def generate_launch_description():
     """Gerar descrição do launch corrigido"""
@@ -43,16 +41,17 @@ def generate_launch_description():
         )
     ]
 
-    # Caminhos dos pacotes
+    # Caminhos dos pacotes necessários
     f1tenth_control_dir = get_package_share_directory('f1tenth_control')
-    vesc_driver_dir = get_package_share_directory('vesc_driver')
-    vesc_ackermann_dir = get_package_share_directory('vesc_ackermann')
     vesc_config_dir = get_package_share_directory('vesc_config')
-    joy_converter_dir = get_package_share_directory('joy_converter')
 
     # Arquivos de configuração
-    control_config = os.path.join(f1tenth_control_dir, 'config', 'control_params.yaml')
-    vesc_config = os.path.join(vesc_config_dir, 'config', 'vesc_config.yaml')
+    control_config = os.path.join(
+        f1tenth_control_dir, 'config', 'control_params.yaml'
+    )
+    vesc_config = os.path.join(
+        vesc_config_dir, 'config', 'vesc_config.yaml'
+    )
 
     # ===== 1. DRIVER VESC =====
     vesc_driver_node = Node(
