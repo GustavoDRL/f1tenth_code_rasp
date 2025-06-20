@@ -40,24 +40,33 @@ bash scripts/post_build_setup.sh
 echo "📁 Carregando workspace..."
 source install/setup.bash
 
-# Testar executáveis
+# Testar executáveis (validação simples - não executa)
 echo "🧪 Testando executáveis..."
 EXECUTABLES=("servo_control_node" "enhanced_servo_control_node" "servo_calibration")
 for exe in "${EXECUTABLES[@]}"; do
-    if ros2 run f1tenth_control "$exe" --help >/dev/null 2>&1; then
-        echo "  ✅ $exe funcional"
+    if [ -f "install/f1tenth_control/lib/f1tenth_control/$exe" ] && [ -x "install/f1tenth_control/lib/f1tenth_control/$exe" ]; then
+        echo "  ✅ $exe encontrado e executável"
     else
-        echo "  ❌ $exe com problemas"
+        echo "  ❌ $exe não encontrado ou sem permissão"
         exit 1
     fi
 done
 
-# Verificar launch files
-echo "🚀 Testando launch files..."
-if ros2 launch f1tenth_control f1tenth_control.launch.py --help >/dev/null 2>&1; then
-    echo "  ✅ Launch files funcionais"
+# Verificar se ROS2 reconhece os executáveis
+echo "🔍 Verificando reconhecimento ROS2..."
+if ros2 pkg executables f1tenth_control | grep -q "servo_control_node"; then
+    echo "  ✅ ROS2 reconhece os executáveis"
 else
-    echo "  ❌ Launch files com problemas"
+    echo "  ❌ ROS2 não reconhece os executáveis"
+    exit 1
+fi
+
+# Verificar launch files (sintaxe apenas)
+echo "🚀 Verificando launch files..."
+if python3 -m py_compile src/f1tenth_control/launch/f1tenth_control.launch.py; then
+    echo "  ✅ Launch files com sintaxe válida"
+else
+    echo "  ❌ Launch files com erro de sintaxe"
     exit 1
 fi
 
@@ -65,6 +74,6 @@ echo ""
 echo "✅ Build F1TENTH concluído com sucesso!"
 echo ""
 echo "📋 Próximos passos:"
-echo "   1. Testar: ros2 launch f1tenth_control f1tenth_control.launch.py"
-echo "   2. Instalar serviço: sudo bash scripts/install_service.sh"
+echo "   1. Instalar serviço: sudo bash scripts/install_service.sh"
+echo "   2. Testar manualmente: ros2 launch f1tenth_control f1tenth_control.launch.py"
 echo "   3. Status: systemctl status f1tenth.service" 

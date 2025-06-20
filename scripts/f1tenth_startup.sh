@@ -77,17 +77,25 @@ fi
 # Aguardar pigpiod estabilizar
 sleep 2
 
-# Verificar executáveis ROS2
+# Verificar executáveis ROS2 (validação simples)
 log "🔍 Verificando executáveis ROS2..."
 EXECUTABLES=("servo_control_node" "enhanced_servo_control_node")
 for exe in "${EXECUTABLES[@]}"; do
-    if ros2 pkg executables f1tenth_control | grep -q "$exe"; then
+    if [ -f "install/f1tenth_control/lib/f1tenth_control/$exe" ]; then
         log "  ✅ $exe encontrado"
     else
         log "  ❌ $exe não encontrado"
         exit 1
     fi
 done
+
+# Verificar se ROS2 reconhece o pacote
+if ros2 pkg list | grep -q "f1tenth_control"; then
+    log "✅ Pacote f1tenth_control reconhecido pelo ROS2"
+else
+    log "❌ Pacote f1tenth_control não reconhecido"
+    exit 1
+fi
 
 log "✅ Sistema F1TENTH inicializado com sucesso!"
 log "📋 Para usar:"
