@@ -1,0 +1,151 @@
+# =============================================================================
+# F1TENTH COMPLETE SYSTEM CONFIGURATION
+# =============================================================================
+# Sistema: Raspberry Pi 4B + VESC 6.2 + Servo GPIO + Teclado
+# Data: 2025-06-21
+# Status: Configuração para sistema híbrido funcional
+
+# =============================================================================
+# VESC DRIVER CONFIGURATION
+# =============================================================================
+/vesc_driver:
+  ros__parameters:
+    # Hardware connection
+    port: "/dev/ttyACM0"
+    
+    # Motor control limits (VALIDATED VALUES)
+    duty_cycle_min: -0.5          # -50% duty cycle (reverse)
+    duty_cycle_max: 0.5           # +50% duty cycle (forward)
+    current_min: -30.0            # -30A (regenerative braking)
+    current_max: 30.0             # +30A (maximum acceleration)
+    speed_min: -30000.0           # -30000 ERPM (reverse)
+    speed_max: 30000.0            # +30000 ERPM (forward)
+    
+    # Brake and position limits
+    brake_min: 0.0
+    brake_max: 200000.0
+    position_min: 0.0
+    position_max: 1000000.0
+    
+    # Servo control (DISABLED - using GPIO)
+    servo_min: 0.15
+    servo_max: 0.85
+    use_servo_cmd: false          # CRITICAL: Servo controlled via GPIO
+    
+    # Telemetry publishing
+    publish_odom: true
+    publish_tf: true
+    odom_frame: "odom"
+    base_frame: "base_link"
+
+# =============================================================================
+# ACKERMANN TO VESC CONVERTER CONFIGURATION
+# =============================================================================
+/ackermann_to_vesc_node:
+  ros__parameters:
+    # CRITICAL PARAMETERS - Conversion from Ackermann to VESC
+    speed_to_erpm_gain: 3000.0    # VALIDATED: 3.0 m/s * 3000 = 9000 ERPM
+    speed_to_erpm_offset: 0.0     # No offset needed
+    
+    # Steering conversion (not used - servo via GPIO)
+    steering_angle_to_servo_gain: 1.0
+    steering_angle_to_servo_offset: 0.5
+
+# =============================================================================
+# VESC TO ODOMETRY CONVERTER CONFIGURATION  
+# =============================================================================
+/vesc_to_odom_node:
+  ros__parameters:
+    # Odometry publishing
+    odom_frame: "odom"
+    base_frame: "base_link"
+    publish_tf: true
+    
+    # Vehicle parameters for odometry calculation
+    wheelbase: 0.32               # 32cm wheelbase (typical F1TENTH)
+    speed_to_erpm_gain: 3000.0    # Must match ackermann_to_vesc
+
+# =============================================================================
+# SERVO CONTROL CONFIGURATION (GPIO)
+# =============================================================================
+/servo_control_node:
+  ros__parameters:
+    # GPIO Hardware Configuration
+    servo_gpio_pin: 18            # BCM GPIO pin for servo PWM
+    servo_pwm_frequency: 50       # 50Hz PWM frequency (standard servo)
+    
+    # CALIBRATED SERVO PARAMETERS (EMPIRICALLY DETERMINED)
+    servo_min_pulse_width: 850    # Left extreme (calibrated)
+    servo_center_pulse_width: 1175 # Center position (calibrated)  
+    servo_max_pulse_width: 1500   # Right extreme (calibrated)
+    
+    # Physical limits
+    max_steering_angle: 0.4       # ±23 degrees in radians
+    min_steering_angle: -0.4
+    max_angular_velocity: 2.0     # rad/s
+    
+    # Control parameters
+    control_frequency: 100.0      # 100Hz control loop
+    command_timeout: 1.0          # 1 second command timeout
+    
+    # PID Controller (if enabled)
+    enable_pid: true
+    pid_kp: 0.8
+    pid_ki: 0.1
+    pid_kd: 0.05
+    
+    # ROS2 Topics and Frames
+    drive_topic: "/drive"
+    odom_topic: "/ego_racecar/odom"
+    use_vesc_odom: true
+    vesc_odom_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    
+    # Safety
+    enable_safety_limits: true
+
+# =============================================================================
+# JOYSTICK/KEYBOARD CONVERTER CONFIGURATION
+# =============================================================================
+/joy_keyboard_converter:
+  ros__parameters:
+    # Control limits
+    max_speed: 3.0                # 3.0 m/s maximum speed
+    max_steering_angle: 0.4       # ±23 degrees maximum steering
+    
+    # Control responsiveness  
+    speed_increment: 0.5          # 0.5 m/s per key press
+    steering_increment: 0.1       # 0.1 rad per key press
+    
+    # Input mapping
+    joy_speed_axis: 1             # Left stick Y-axis
+    joy_angle_axis: 3             # Right stick X-axis  
+    enable_button: 4              # Left bumper enable
+    
+    # Safety
+    emergency_stop_button: 0      # A button for emergency stop
+
+# =============================================================================
+# STATIC TRANSFORM PUBLISHERS
+# =============================================================================
+/static_tf_base_to_laser:
+  ros__parameters:
+    # Transform from base_link to laser_frame
+    translation_x: 0.1            # 10cm forward from base
+    translation_y: 0.0            # Centered
+    translation_z: 0.2            # 20cm above base
+    rotation_roll: 0.0
+    rotation_pitch: 0.0
+    rotation_yaw: 0.0
+    parent_frame: "base_link"
+    child_frame: "laser_frame"
+
+# =============================================================================
+# SYSTEM-WIDE PARAMETERS
+# =============================================================================
+# Global ROS2 parameters applied to all nodes
+/**:
+  ros__parameters:
+    use_sim_time: false           # Real hardware time
+    robot_namespace: "ego_racecar" # F1TENTH standard namespace 
