@@ -1,37 +1,34 @@
 #!/usr/bin/env python3
 """
-F1TENTH Complete System Launch File
-==================================
-Sistema completo: VESC + Servo + LiDAR + Teclado
-Para Raspberry Pi 4B com controle manual por teclado
+F1TENTH VESC Only Launch File
+============================
+Sistema simplificado: Apenas VESC + Teclado (SEM Servo, SEM LiDAR)
+Para testes do motor e desenvolvimento isolado
 
 Componentes:
 - VESC Motor Controller (USB)
-- Servo Steering (GPIO PWM)
-- YDLiDAR X4 (USB)
 - Keyboard Control Interface
-- Real-time Odometry & TF
+- Basic Odometry
 
 Uso:
-    ros2 launch f1tenth_control f1tenth_complete_system.launch.py
+    ros2 launch f1tenth_control f1tenth_vesc_only.launch.py
 
 Controles de Teclado:
     W/S: Acelerar/Frear
-    A/D: Esquerda/Direita
     Espaço: Parar
     Q: Sair
+    (A/D: Sem efeito - sem servo)
 """
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, TimerAction, LogInfo
-from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """Generate complete F1TENTH system launch description."""
+    """Generate F1TENTH VESC-only launch description."""
 
     # ==========================================================================
     # LAUNCH ARGUMENTS
@@ -56,10 +53,6 @@ def generate_launch_description():
         [FindPackageShare("vesc_config"), "config", "vesc_config.yaml"]
     )
 
-    lidar_config = PathJoinSubstitution(
-        [FindPackageShare("ydlidar_ros2_driver"), "params", "X4.yaml"]
-    )
-
     # ==========================================================================
     # GLOBAL PARAMETERS
     # ==========================================================================
@@ -73,7 +66,7 @@ def generate_launch_description():
     # ==========================================================================
     hardware_drivers = GroupAction(
         [
-            LogInfo(msg="Launching F1TENTH hardware drivers..."),
+            LogInfo(msg="Launching VESC motor driver only..."),
             # VESC Motor Controller Driver
             Node(
                 package="vesc_driver",
@@ -84,28 +77,6 @@ def generate_launch_description():
                 respawn=True,
                 respawn_delay=2.0,
             ),
-            # Servo Control Node (GPIO PWM)
-            Node(
-                package="f1tenth_control",
-                executable="servo_control_node",
-                name="servo_control_node",
-                namespace=LaunchConfiguration("namespace"),
-                parameters=[control_config],
-                output="screen",
-                emulate_tty=True,
-                respawn=True,
-                respawn_delay=2.0,
-            ),
-            # YDLiDAR X4 Driver
-            Node(
-                package="ydlidar_ros2_driver",
-                executable="ydlidar_ros2_driver_node",
-                name="ydlidar_node",
-                parameters=[lidar_config],
-                output="screen",
-                respawn=True,
-                respawn_delay=3.0,
-            ),
         ]
     )
 
@@ -114,8 +85,8 @@ def generate_launch_description():
     # ==========================================================================
     conversion_nodes = GroupAction(
         [
-            LogInfo(msg="Launching Ackermann ↔ VESC converters..."),
-            # Ackermann to VESC Converter
+            LogInfo(msg="Launching Ackermann → VESC converter..."),
+            # Ackermann to VESC Converter (Motor only)
             Node(
                 package="vesc_ackermann",
                 executable="ackermann_to_vesc_node",
@@ -128,7 +99,7 @@ def generate_launch_description():
                 ],
                 output="screen",
             ),
-            # VESC to Odometry Converter
+            # VESC to Odometry Converter (Basic odometry)
             Node(
                 package="vesc_ackermann",
                 executable="vesc_to_odom_node",
@@ -139,7 +110,8 @@ def generate_launch_description():
                         "base_frame": "base_link",
                         "speed_to_erpm_gain": 4614.0,
                         "wheelbase": 0.33,
-                        "publish_tf": False,
+                        "publish_tf": True,  # VESC publishes basic TF
+                        "use_servo_cmd_to_calc_angular_velocity": False,  # No servo
                     }
                 ],
                 remappings=[
@@ -155,13 +127,20 @@ def generate_launch_description():
     # ==========================================================================
     control_interface = GroupAction(
         [
-            LogInfo(msg="Launching keyboard control interface..."),
-            # Keyboard Control Interface
+            LogInfo(msg="Launching keyboard control (motor only)..."),
+            # Keyboard Control Interface (motor commands only)
             Node(
                 package="joy_converter",
                 executable="joy_keyboard",
                 name="keyboard_converter",
-                parameters=[control_config],
+                parameters=[
+                    {
+                        "max_speed": 2.0,  # Conservative speed for testing
+                        "max_steering_angle": 0.0,  # No steering without servo
+                        "speed_increment": 0.3,  # Smaller increments for safety
+                        "steering_increment": 0.0,  # No steering
+                    }
+                ],
                 remappings=[
                     ("drive", "/drive"),
                 ],
@@ -176,21 +155,21 @@ def generate_launch_description():
     # ==========================================================================
     transform_publishers = GroupAction(
         [
-            LogInfo(msg="Setting up coordinate transforms..."),
-            # Base Link to Laser Frame
+            LogInfo(msg="Setting up basic coordinate transforms..."),
+            # Map to Odom (static since no SLAM)
             Node(
                 package="tf2_ros",
                 executable="static_transform_publisher",
-                name="base_to_laser_tf",
+                name="map_to_odom_tf",
                 arguments=[
-                    "0.1",
-                    "0.0",
-                    "0.2",  # x, y, z (10cm forward, 20cm up)
+                    "0",
+                    "0",
+                    "0",  # x, y, z
                     "0",
                     "0",
                     "0",  # roll, pitch, yaw
-                    "base_link",
-                    "laser_frame",
+                    "map",
+                    "odom",
                 ],
                 output="log",
             ),
@@ -212,9 +191,10 @@ def generate_launch_description():
         + global_parameters
         + [
             LogInfo(msg="========================================"),
-            LogInfo(msg="F1TENTH COMPLETE SYSTEM STARTING..."),
-            LogInfo(msg="Hardware: VESC + Servo + LiDAR"),
-            LogInfo(msg="Controls: W/S=Motor, A/D=Servo, Space=Stop"),
+            LogInfo(msg="F1TENTH VESC ONLY SYSTEM STARTING..."),
+            LogInfo(msg="Hardware: VESC Motor Only"),
+            LogInfo(msg="Controls: W/S=Motor, Space=Stop"),
+            LogInfo(msg="Note: A/D keys have no effect (no servo)"),
             LogInfo(msg="========================================"),
             # Immediate startup
             hardware_drivers,
@@ -222,32 +202,6 @@ def generate_launch_description():
             # Delayed startup
             delayed_conversion,
             delayed_control,
-            LogInfo(msg="F1TENTH Complete System Ready!"),
+            LogInfo(msg="F1TENTH VESC Only System Ready!"),
         ]
     )
-
-
-# =============================================================================
-# LAUNCH FILE VALIDATION
-# =============================================================================
-if __name__ == "__main__":
-    # This section runs when launch file is executed directly
-    print("F1TENTH Complete System Launch File")
-    print("===================================")
-    print("This file launches the complete F1TENTH hybrid control system.")
-    print("Usage: ros2 launch f1tenth_control f1tenth_complete_system.launch.py")
-    print("")
-    print("System Components:")
-    print("- VESC Motor Controller (USB)")
-    print("- Servo Steering Control (GPIO)")
-    print("- YDLiDAR X4 (USB)")
-    print("- Keyboard Control Interface")
-    print("- Ackermann ↔ VESC Conversion")
-    print("- Real-time Odometry")
-    print("- Coordinate Frame Transforms")
-    print("")
-    print("Expected Result:")
-    print("- W/S keys control motor speed")
-    print("- A/D keys control steering servo")
-    print("- Space key stops the vehicle")
-    print("- Q key exits the control interface")

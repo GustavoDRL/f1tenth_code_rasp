@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """
-F1TENTH Complete System Launch File
-==================================
-Sistema completo: VESC + Servo + LiDAR + Teclado
+F1TENTH System (No LiDAR) Launch File
+====================================
+Sistema híbrido: VESC + Servo + Teclado (SEM LiDAR)
 Para Raspberry Pi 4B com controle manual por teclado
 
 Componentes:
 - VESC Motor Controller (USB)
 - Servo Steering (GPIO PWM)
-- YDLiDAR X4 (USB)
 - Keyboard Control Interface
 - Real-time Odometry & TF
 
 Uso:
-    ros2 launch f1tenth_control f1tenth_complete_system.launch.py
+    ros2 launch f1tenth_control f1tenth_system_no_lidar.launch.py
 
 Controles de Teclado:
     W/S: Acelerar/Frear
@@ -24,14 +23,13 @@ Controles de Teclado:
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, TimerAction, LogInfo
-from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """Generate complete F1TENTH system launch description."""
+    """Generate F1TENTH system without LiDAR launch description."""
 
     # ==========================================================================
     # LAUNCH ARGUMENTS
@@ -56,10 +54,6 @@ def generate_launch_description():
         [FindPackageShare("vesc_config"), "config", "vesc_config.yaml"]
     )
 
-    lidar_config = PathJoinSubstitution(
-        [FindPackageShare("ydlidar_ros2_driver"), "params", "X4.yaml"]
-    )
-
     # ==========================================================================
     # GLOBAL PARAMETERS
     # ==========================================================================
@@ -73,7 +67,7 @@ def generate_launch_description():
     # ==========================================================================
     hardware_drivers = GroupAction(
         [
-            LogInfo(msg="Launching F1TENTH hardware drivers..."),
+            LogInfo(msg="Launching F1TENTH hardware drivers (no LiDAR)..."),
             # VESC Motor Controller Driver
             Node(
                 package="vesc_driver",
@@ -95,16 +89,6 @@ def generate_launch_description():
                 emulate_tty=True,
                 respawn=True,
                 respawn_delay=2.0,
-            ),
-            # YDLiDAR X4 Driver
-            Node(
-                package="ydlidar_ros2_driver",
-                executable="ydlidar_ros2_driver_node",
-                name="ydlidar_node",
-                parameters=[lidar_config],
-                output="screen",
-                respawn=True,
-                respawn_delay=3.0,
             ),
         ]
     )
@@ -177,20 +161,20 @@ def generate_launch_description():
     transform_publishers = GroupAction(
         [
             LogInfo(msg="Setting up coordinate transforms..."),
-            # Base Link to Laser Frame
+            # Base Link to Odom (since no LiDAR/SLAM)
             Node(
                 package="tf2_ros",
                 executable="static_transform_publisher",
-                name="base_to_laser_tf",
+                name="map_to_odom_tf",
                 arguments=[
-                    "0.1",
-                    "0.0",
-                    "0.2",  # x, y, z (10cm forward, 20cm up)
+                    "0",
+                    "0",
+                    "0",  # x, y, z
                     "0",
                     "0",
                     "0",  # roll, pitch, yaw
-                    "base_link",
-                    "laser_frame",
+                    "map",
+                    "odom",
                 ],
                 output="log",
             ),
@@ -212,8 +196,8 @@ def generate_launch_description():
         + global_parameters
         + [
             LogInfo(msg="========================================"),
-            LogInfo(msg="F1TENTH COMPLETE SYSTEM STARTING..."),
-            LogInfo(msg="Hardware: VESC + Servo + LiDAR"),
+            LogInfo(msg="F1TENTH SYSTEM (NO LIDAR) STARTING..."),
+            LogInfo(msg="Hardware: VESC + Servo (no LiDAR)"),
             LogInfo(msg="Controls: W/S=Motor, A/D=Servo, Space=Stop"),
             LogInfo(msg="========================================"),
             # Immediate startup
@@ -222,32 +206,6 @@ def generate_launch_description():
             # Delayed startup
             delayed_conversion,
             delayed_control,
-            LogInfo(msg="F1TENTH Complete System Ready!"),
+            LogInfo(msg="F1TENTH System (No LiDAR) Ready!"),
         ]
     )
-
-
-# =============================================================================
-# LAUNCH FILE VALIDATION
-# =============================================================================
-if __name__ == "__main__":
-    # This section runs when launch file is executed directly
-    print("F1TENTH Complete System Launch File")
-    print("===================================")
-    print("This file launches the complete F1TENTH hybrid control system.")
-    print("Usage: ros2 launch f1tenth_control f1tenth_complete_system.launch.py")
-    print("")
-    print("System Components:")
-    print("- VESC Motor Controller (USB)")
-    print("- Servo Steering Control (GPIO)")
-    print("- YDLiDAR X4 (USB)")
-    print("- Keyboard Control Interface")
-    print("- Ackermann ↔ VESC Conversion")
-    print("- Real-time Odometry")
-    print("- Coordinate Frame Transforms")
-    print("")
-    print("Expected Result:")
-    print("- W/S keys control motor speed")
-    print("- A/D keys control steering servo")
-    print("- Space key stops the vehicle")
-    print("- Q key exits the control interface")
