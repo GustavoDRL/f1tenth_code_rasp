@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Launch corrigido para 8BitDo Ultimate 2C Wireless Controller
-Resolve problemas de detecção e configuração do joystick
+Launch file otimizado para controle joystick F1TENTH
+Resolve problemas de timing e configuração para 8BitDo e controles genéricos
 
 Melhorias:
 - Parâmetros específicos para 8BitDo
@@ -23,17 +23,19 @@ def generate_launch_description():
     device_id_arg = DeclareLaunchArgument(
         "device_id",
         default_value="0",
-        description="ID do dispositivo joystick (0, 1, 2...)",
+        description="ID do dispositivo joystick (/dev/input/js[ID])",
     )
 
     autorepeat_rate_arg = DeclareLaunchArgument(
         "autorepeat_rate",
         default_value="20.0",
-        description="Taxa de repetição automática (Hz)",
+        description="Taxa de repetição automática em Hz",
     )
 
     deadzone_arg = DeclareLaunchArgument(
-        "deadzone", default_value="0.05", description="Zona morta do joystick (0.0-1.0)"
+        "deadzone",
+        default_value="0.05",
+        description="Zona morta do joystick (0.0-1.0)",
     )
 
     debug_mode_arg = DeclareLaunchArgument(
@@ -42,14 +44,14 @@ def generate_launch_description():
 
     max_speed_arg = DeclareLaunchArgument(
         "max_speed",
-        default_value="3.0",
-        description="Velocidade máxima (m/s) - reduzida para testes",
+        default_value="2.0",
+        description="Velocidade máxima para testes (m/s)",
     )
 
     max_angle_arg = DeclareLaunchArgument(
         "max_angle",
         default_value="0.25",
-        description="Ângulo máximo direção (rad) - reduzido para segurança",
+        description="Ângulo máximo de direção (rad)",
     )
 
     # Comando de diagnóstico inicial (opcional)
@@ -67,34 +69,30 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration("debug_mode")),
     )
 
-    # Nó joy_node com configuração robusta para 8BitDo
+    # Nó joy_node com configuração robusta
     joy_node = Node(
         package="joy",
         executable="joy_node",
         name="joy_node",
         parameters=[
             {
-                # Configuração básica
                 "device_id": LaunchConfiguration("device_id"),
                 "deadzone": LaunchConfiguration("deadzone"),
                 "autorepeat_rate": LaunchConfiguration("autorepeat_rate"),
-                "coalesce_interval": 0.01,  # Reduzir latência
-                # Configurações específicas para 8BitDo
-                "dev_name": "",  # Deixar vazio para auto-detecção
-                "publish_period": 0.05,  # 20Hz de publicação
-                "sticky_buttons": False,  # Desabilitar botões grudados
-                "default_trig_val": False,  # Triggers como botões
+                "coalesce_interval": 0.01,  # Intervalo de coalescência reduzido
+                "dev": "/dev/input/js0",  # Dispositivo padrão
+                "publish_button_changes_only": False,  # Publicar sempre
             }
         ],
         output="screen",
         emulate_tty=True,
-        respawn=True,
-        respawn_delay=2.0,
+        respawn=True,  # Reiniciar se morrer
+        respawn_delay=2.0,  # Delay para reinício
     )
 
-    # Nó conversor joy_ackerman com delay para aguardar joy_node
+    # Nó conversor com delay para aguardar joy_node estabilizar
     joy_converter = TimerAction(
-        period=3.0,  # 3 segundos de delay para inicialização
+        period=3.0,  # 3 segundos de delay para joy_node inicializar
         actions=[
             Node(
                 package="joy_converter",
@@ -102,17 +100,15 @@ def generate_launch_description():
                 name="joy_ackerman",
                 parameters=[
                     {
-                        # Limites de segurança reduzidos para testes
                         "max_speed": LaunchConfiguration("max_speed"),
                         "max_angle": LaunchConfiguration("max_angle"),
-                        "controller_error": 0.1,  # Dead zone no converter
-                        # Configurações específicas
-                        "emergency_button": 10,  # Botão PS/Xbox para reset
-                        "enable_safety": True,
-                        "timeout_safety": 1.0,  # Timeout de 1 segundo
+                        "controller_error": 0.1,  # Dead zone do controle
+                        "speed_axis": 1,  # Stick esquerdo Y (frente/trás)
+                        "angle_axis": 3,  # Stick direito X (esquerda/direita)
+                        "enable_button": 4,  # Botão L1/LB para habilitar
+                        "deadman_button": 4,  # Mesmo botão como deadman
                     }
                 ],
-                remappings=[("joy", "/joy"), ("drive", "/drive")],
                 output="screen",
                 emulate_tty=True,
                 respawn=True,
