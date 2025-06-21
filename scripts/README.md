@@ -1,165 +1,152 @@
-# 🏎️ Scripts de Automatização F1TENTH
+# 🛠️ Scripts F1TENTH - Raspberry Pi
 
-Este diretório contém scripts para automatizar completamente o sistema F1TENTH no Raspberry Pi.
+Scripts automatizados para instalação, build e operação do sistema F1TENTH no Raspberry Pi.
 
-## 📁 Arquivos
+## 📂 Scripts Disponíveis
 
-| Script | Função | Uso |
-|--------|--------|-----|
-| `build_f1tenth.sh` | Build completo com correções | `bash scripts/build_f1tenth.sh` |
-| `post_build_setup.sh` | Configuração pós-build | Automático após build |
-| `f1tenth_startup.sh` | Inicialização do sistema | Automático no boot |
-| `install_service.sh` | Instalar serviço systemd | `sudo bash scripts/install_service.sh` |
-| `f1tenth.service` | Configuração systemd | Usado pelo install_service.sh |
+### 🔧 **setup_raspberry_dependencies.sh**
+**Propósito**: Instalação completa de dependências no Raspberry Pi
+- Instala YDLiDAR SDK
+- Configura middleware ROS2
+- Instala pigpio para controle GPIO
+- Configura permissões USB e grupos de usuário
+- Cria ambiente F1TENTH
 
-## 🚀 Instalação Completa (Uma Vez)
-
-### **Passo 1: Build Inicial**
+**Uso**:
 ```bash
+chmod +x scripts/setup_raspberry_dependencies.sh
+./scripts/setup_raspberry_dependencies.sh
+```
+
+### 🏗️ **build_and_test_f1tenth.sh**
+**Propósito**: Build completo e validação do sistema
+- Build de todos os pacotes ROS2
+- Validação de instalação
+- Testes de comunicação
+- Verificação de hardware
+- Diagnóstico completo
+
+**Uso**:
+```bash
+chmod +x scripts/build_and_test_f1tenth.sh
+./scripts/build_and_test_f1tenth.sh
+```
+
+### 🚀 **f1tenth_startup.sh**
+**Propósito**: Inicialização do sistema F1TENTH
+- Carregamento do ambiente ROS2
+- Launch do sistema completo
+- Monitoramento de status
+
+**Uso**:
+```bash
+chmod +x scripts/f1tenth_startup.sh
+./scripts/f1tenth_startup.sh
+```
+
+### 🧪 **test_f1tenth.sh**
+**Propósito**: Testes básicos do sistema
+- Teste de movimento do servo
+- Verificação de comunicação ROS2
+- Validação de hardware
+
+**Uso**:
+```bash
+chmod +x scripts/test_f1tenth.sh
+./scripts/test_f1tenth.sh
+```
+
+### 🎮 **test_f1tenth_manual_control.sh**
+**Propósito**: Teste de controle manual
+- Teste com joystick
+- Validação de comandos manuais
+
+**Uso**:
+```bash
+chmod +x scripts/test_f1tenth_manual_control.sh
+./scripts/test_f1tenth_manual_control.sh
+```
+
+### 🔍 **detect_8bitdo_controller.sh**
+**Propósito**: Detecção e configuração de joystick 8BitDo
+- Verificação de conexão Bluetooth
+- Configuração automática
+
+**Uso**:
+```bash
+chmod +x scripts/detect_8bitdo_controller.sh
+./scripts/detect_8bitdo_controller.sh
+```
+
+## 📋 Sequência de Configuração no Raspberry Pi
+
+### 1️⃣ **Primeira Instalação**
+```bash
+# 1. Clonar repositório
+cd ~/Documents
+git clone [URL_REPOSITORIO] f1tenth_code_rasp
+cd f1tenth_code_rasp
+
+# 2. Instalar dependências (pode demorar 10-15 min)
+chmod +x scripts/setup_raspberry_dependencies.sh
+./scripts/setup_raspberry_dependencies.sh
+
+# 3. Fazer logout/login ou reiniciar
+logout
+# ou: sudo reboot
+```
+
+### 2️⃣ **Build e Teste**
+```bash
+# 4. Build do sistema (3-5 min)
 cd ~/Documents/f1tenth_code_rasp
-bash scripts/build_f1tenth.sh
+chmod +x scripts/build_and_test_f1tenth.sh
+./scripts/build_and_test_f1tenth.sh
+
+# 5. Teste básico
+chmod +x scripts/test_f1tenth.sh
+./scripts/test_f1tenth.sh
 ```
 
-### **Passo 2: Instalar Serviço Automático**
+### 3️⃣ **Operação**
 ```bash
-sudo bash scripts/install_service.sh
+# 6. Iniciar sistema completo
+chmod +x scripts/f1tenth_startup.sh
+./scripts/f1tenth_startup.sh
+
+# 7. Controle manual (outro terminal)
+chmod +x scripts/test_f1tenth_manual_control.sh
+./scripts/test_f1tenth_manual_control.sh
 ```
 
-### **Passo 3: Testar Sistema**
+## ⚠️ Notas Importantes
+
+- **Não execute com sudo**: Os scripts verificam permissões e pedem sudo quando necessário
+- **Logout necessário**: Após instalar dependências, é necessário logout/login para grupos de usuário
+- **Hardware conectado**: Certifique-se que VESC, servo e LiDAR estão conectados antes dos testes
+- **Tempo de execução**: setup_raspberry_dependencies.sh pode demorar 10-15 minutos na primeira vez
+
+## 🔧 Troubleshooting
+
+### Script não executa
 ```bash
-sudo systemctl start f1tenth.service
-sudo systemctl status f1tenth.service
-```
-
-## ✅ Resultado da Automação
-
-Após a instalação, o sistema:
-
-- ✅ **Inicia automaticamente** no boot do Raspberry Pi
-- ✅ **Configura pigpiod** automaticamente
-- ✅ **Corrige links simbólicos ROS2** automaticamente
-- ✅ **Carrega workspace** automaticamente
-- ✅ **Monitora serviços** com restart automático
-
-## 📋 Comandos de Gerenciamento
-
-### **Status do Sistema**
-```bash
-# Status geral
-sudo systemctl status f1tenth.service
-
-# Logs em tempo real
-sudo journalctl -u f1tenth.service -f
-
-# Status pigpiod
-sudo systemctl status pigpiod
-```
-
-### **Controle Manual**
-```bash
-# Parar sistema
-sudo systemctl stop f1tenth.service
-
-# Iniciar sistema
-sudo systemctl start f1tenth.service
-
-# Reiniciar sistema
-sudo systemctl restart f1tenth.service
-
-# Desabilitar inicialização automática
-sudo systemctl disable f1tenth.service
-```
-
-### **Teste Manual do Sistema**
-```bash
-# Source ambiente
-source ~/Documents/f1tenth_code_rasp/install/setup.bash
-
-# Testar nó básico
-ros2 launch f1tenth_control f1tenth_control.launch.py
-
-# Testar nó avançado
-ros2 launch f1tenth_control f1tenth_control.launch.py use_enhanced_control:=true
-
-# Testar comando do servo
-ros2 topic pub /drive ackermann_msgs/msg/AckermannDriveStamped \
-  "{drive: {steering_angle: 0.2, speed: 0.0}}" --once
-```
-
-## 🔧 Rebuilds e Atualizações
-
-### **Rebuild Completo**
-```bash
-cd ~/Documents/f1tenth_code_rasp
-bash scripts/build_f1tenth.sh
-```
-
-### **Atualização do Código**
-```bash
-cd ~/Documents/f1tenth_code_rasp
-git pull origin main
-bash scripts/build_f1tenth.sh
-sudo systemctl restart f1tenth.service
-```
-
-## 📊 Monitoramento
-
-### **Logs do Sistema**
-```bash
-# Logs de inicialização
-sudo tail -f /var/log/f1tenth_startup.log
-
-# Logs do serviço systemd
-sudo journalctl -u f1tenth.service --since "1 hour ago"
-
-# Status ROS2
-ros2 node list
-ros2 topic list
-```
-
-### **Performance**
-```bash
-# CPU e memória
-top -p $(pgrep -f ros2)
-
-# Frequência dos tópicos
-ros2 topic hz /drive
-ros2 topic hz /ego_racecar/odom
-```
-
-## ❓ Troubleshooting
-
-### **Serviço não inicia**
-```bash
-# Verificar logs
-sudo journalctl -u f1tenth.service -n 50
-
-# Testar script manualmente
-sudo bash scripts/f1tenth_startup.sh
-
 # Verificar permissões
 ls -la scripts/
+# Se necessário:
+chmod +x scripts/*.sh
 ```
 
-### **pigpiod não conecta**
+### Dependências faltando
 ```bash
-# Verificar se está rodando
-sudo systemctl status pigpiod
-
-# Reiniciar pigpiod
-sudo systemctl restart pigpiod
-
-# Testar manualmente
-pigpiod
+# Re-executar instalação de dependências
+./scripts/setup_raspberry_dependencies.sh
 ```
 
-### **Executáveis não encontrados**
+### Build falha
 ```bash
-# Rebuild com correções
-bash scripts/build_f1tenth.sh
-
-# Verificar links
-ls -la install/f1tenth_control/lib/f1tenth_control/
+# Limpar e tentar novamente
+rm -rf build/ install/ log/
+./scripts/build_and_test_f1tenth.sh
 ```
 
 ## 🎯 Próximas Fases
