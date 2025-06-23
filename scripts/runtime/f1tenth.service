@@ -1,0 +1,28 @@
+[Unit]
+Description=F1TENTH Autonomous Racing System
+After=network.target pigpiod.service
+Wants=pigpiod.service
+RequiresMountsFor=/home
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+WorkingDirectory=/home/disney/Documents/f1tenth_code_rasp
+ExecStart=/home/disney/Documents/f1tenth_code_rasp/scripts/f1tenth_startup.sh
+ExecStop=/bin/bash -c "sudo pkill -f f1tenth || true"
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+
+# Configurações de ambiente
+Environment=HOME=/home/disney
+Environment=USER=disney
+Environment=ROS_DOMAIN_ID=0
+Environment=ROS_LOCALHOST_ONLY=1
+
+[Install]
+WantedBy=multi-user.target 
