@@ -87,15 +87,15 @@ def generate_launch_description():
                 respawn_delay=2.0,
             ),
             # Nó de Controle do Servo (GPIO PWM) - VERSÃO AVANÇADA
-            # WORKAROUND: Usando ExecuteProcess para chamar o executável diretamente,
-            # pois ros2 launch não o encontra no ambiente ARM64/Humble.
+            # WORKAROUND: Usando ExecuteProcess para chamar o executável diretamente.
+            # Trocado para 'servo_control_node' que é mais estável.
             ExecuteProcess(
                 cmd=[
                     PathJoinSubstitution(
                         [
                             FindPackagePrefix("f1tenth_control"),
                             "bin",
-                            "enhanced_servo_control_node",
+                            "servo_control_node",
                         ]
                     ),
                     "--ros-args",
@@ -104,7 +104,9 @@ def generate_launch_description():
                     "-r",
                     ["__ns:=/", LaunchConfiguration("namespace")],
                     "-r",
-                    "__node:=servo_control_node",
+                    # Renomeamos para 'enhanced_servo_control_node' para que ele
+                    # carregue os parâmetros corretos do system_config.yaml
+                    "__node:=enhanced_servo_control_node",
                 ],
                 output="screen",
                 emulate_tty=True,
