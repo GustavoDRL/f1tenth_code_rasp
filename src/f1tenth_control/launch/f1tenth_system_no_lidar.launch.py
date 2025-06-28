@@ -3,11 +3,15 @@
 F1TENTH System (No LiDAR) Launch File
 ====================================
 Sistema híbrido: VESC + Servo + Teclado (SEM LiDAR)
-Para Raspberry Pi 4B com controle manual por teclado
+Para Raspberry Pi 4B com controle manual por teclado.
+
+Este arquivo de lançamento orquestra os nós essenciais para a operação
+manual do F1TENTH, carregando toda a configuração de um arquivo YAML
+centralizado para máxima flexibilidade e manutenibilidade.
 
 Componentes:
 - VESC Motor Controller (USB)
-- Servo Steering (GPIO PWM)
+- Enhanced Servo Steering (GPIO PWM com Failsafe)
 - Keyboard Control Interface
 - Real-time Odometry & TF
 
@@ -29,33 +33,31 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """Generate F1TENTH system without LiDAR launch description."""
+    """Gera a descrição de lançamento do sistema F1TENTH sem LiDAR."""
 
     # ==========================================================================
-    # LAUNCH ARGUMENTS
+    # ARGUMENTOS DE LANÇAMENTO
     # ==========================================================================
     declared_arguments = [
         DeclareLaunchArgument(
-            "namespace", default_value="ego_racecar", description="Robot namespace"
+            "namespace", default_value="ego_racecar", description="Namespace do robô."
         ),
         DeclareLaunchArgument(
-            "debug_mode", default_value="false", description="Enable debug logging"
+            "debug_mode",
+            default_value="false",
+            description="Habilita logs de depuração.",
         ),
     ]
 
     # ==========================================================================
-    # CONFIGURATION FILES
+    # ARQUIVO DE CONFIGURAÇÃO CENTRAL
     # ==========================================================================
     control_config = PathJoinSubstitution(
         [FindPackageShare("f1tenth_control"), "config", "system_config.yaml"]
     )
 
-    vesc_config = PathJoinSubstitution(
-        [FindPackageShare("vesc_config"), "config", "vesc_config.yaml"]
-    )
-
     # ==========================================================================
-    # GLOBAL PARAMETERS
+    # PARÂMETROS GLOBAIS
     # ==========================================================================
     global_parameters = [
         SetParameter(name="use_sim_time", value=False),
@@ -63,26 +65,26 @@ def generate_launch_description():
     ]
 
     # ==========================================================================
-    # HARDWARE DRIVERS
+    # DRIVERS DE HARDWARE
     # ==========================================================================
     hardware_drivers = GroupAction(
         [
-            LogInfo(msg="Launching F1TENTH hardware drivers (no LiDAR)..."),
-            # VESC Motor Controller Driver
+            LogInfo(msg="Lançando drivers de hardware F1TENTH (sem LiDAR)..."),
+            # Driver do VESC Motor Controller
             Node(
                 package="vesc_driver",
                 executable="vesc_driver_node",
                 name="vesc_driver",
-                parameters=[vesc_config],
+                parameters=[control_config],  # Carrega de system_config.yaml
                 output="screen",
                 respawn=True,
                 respawn_delay=2.0,
             ),
-            # Servo Control Node (GPIO PWM)
+            # Nó de Controle do Servo (GPIO PWM) - VERSÃO AVANÇADA
             Node(
                 package="f1tenth_control",
-                executable="servo_control_node",
-                name="servo_control_node",
+                executable="enhanced_servo_control_node",  # Executável correto
+                name="servo_control_node",  # Nome para carregar params do YAML
                 namespace=LaunchConfiguration("namespace"),
                 parameters=[control_config],
                 output="screen",
@@ -94,61 +96,45 @@ def generate_launch_description():
     )
 
     # ==========================================================================
-    # CONVERSION NODES (DELAYED STARTUP)
+    # NÓS DE CONVERSÃO (INICIALIZAÇÃO ATRASADA)
     # ==========================================================================
     conversion_nodes = GroupAction(
         [
-            LogInfo(msg="Launching Ackermann ↔ VESC converters..."),
-            # Ackermann to VESC Converter
+            LogInfo(msg="Lançando conversores Ackermann <=> VESC..."),
+            # Conversor Ackermann para VESC
             Node(
                 package="vesc_ackermann",
                 executable="ackermann_to_vesc_node",
                 name="ackermann_to_vesc_node",
-                parameters=[
-                    {"speed_to_erpm_gain": 4614.0, "speed_to_erpm_offset": 0.0}
-                ],
-                remappings=[
-                    ("ackermann_cmd", "drive"),
-                ],
+                parameters=[control_config],  # Remove hardcoded params
+                remappings=[("ackermann_cmd", "drive")],
                 output="screen",
             ),
-            # VESC to Odometry Converter
+            # Conversor VESC para Odometria
             Node(
                 package="vesc_ackermann",
                 executable="vesc_to_odom_node",
                 name="vesc_to_odom_node",
-                parameters=[
-                    {
-                        "odom_frame": "odom",
-                        "base_frame": "base_link",
-                        "speed_to_erpm_gain": 4614.0,
-                        "wheelbase": 0.33,
-                        "publish_tf": False,
-                    }
-                ],
-                remappings=[
-                    ("odom", "/ego_racecar/odom"),
-                ],
+                parameters=[control_config],  # Remove hardcoded params
+                remappings=[("odom", "/ego_racecar/odom")],
                 output="screen",
             ),
         ]
     )
 
     # ==========================================================================
-    # CONTROL INTERFACE
+    # INTERFACE DE CONTROLE
     # ==========================================================================
     control_interface = GroupAction(
         [
-            LogInfo(msg="Launching keyboard control interface..."),
-            # Keyboard Control Interface
+            LogInfo(msg="Lançando interface de controle por teclado..."),
+            # Interface de Controle por Teclado
             Node(
                 package="joy_converter",
                 executable="joy_keyboard",
-                name="keyboard_converter",
+                name="joy_keyboard_converter",  # Nome correto para carregar params
                 parameters=[control_config],
-                remappings=[
-                    ("drive", "/drive"),
-                ],
+                remappings=[("drive", "/drive")],
                 output="screen",
                 emulate_tty=True,
             ),
@@ -156,54 +142,45 @@ def generate_launch_description():
     )
 
     # ==========================================================================
-    # TRANSFORM PUBLISHERS
+    # PUBLICADORES DE TRANSFORMAÇÕES (TF)
     # ==========================================================================
     transform_publishers = GroupAction(
         [
-            LogInfo(msg="Setting up coordinate transforms..."),
-            # Base Link to Odom (since no LiDAR/SLAM)
+            LogInfo(msg="Configurando transformações de coordenadas..."),
+            # Transformação estática Map -> Odom
             Node(
                 package="tf2_ros",
                 executable="static_transform_publisher",
                 name="map_to_odom_tf",
-                arguments=[
-                    "0",
-                    "0",
-                    "0",  # x, y, z
-                    "0",
-                    "0",
-                    "0",  # roll, pitch, yaw
-                    "map",
-                    "odom",
-                ],
+                arguments=["0", "0", "0", "0", "0", "0", "map", "odom"],
                 output="log",
             ),
         ]
     )
 
     # ==========================================================================
-    # DELAYED STARTUP SEQUENCE
+    # SEQUÊNCIA DE INICIALIZAÇÃO ATRASADA
     # ==========================================================================
+    # Atraso para garantir que os drivers de hardware estejam prontos
     delayed_conversion = TimerAction(period=3.0, actions=[conversion_nodes])
-
-    delayed_control = TimerAction(period=5.0, actions=[control_interface])
+    delayed_control = TimerAction(period=4.0, actions=[control_interface])
 
     # ==========================================================================
-    # LAUNCH DESCRIPTION ASSEMBLY
+    # MONTAGEM DA DESCRIÇÃO DE LANÇAMENTO
     # ==========================================================================
     return LaunchDescription(
         declared_arguments
         + global_parameters
         + [
-            LogInfo(msg="========================================"),
+            LogInfo(msg="========================================="),
             LogInfo(msg="F1TENTH SYSTEM (NO LIDAR) STARTING..."),
-            LogInfo(msg="Hardware: VESC + Servo (no LiDAR)"),
+            LogInfo(msg="Hardware: VESC + Enhanced Servo"),
             LogInfo(msg="Controls: W/S=Motor, A/D=Servo, Space=Stop"),
-            LogInfo(msg="========================================"),
-            # Immediate startup
+            LogInfo(msg="========================================="),
+            # Inicialização imediata
             hardware_drivers,
             transform_publishers,
-            # Delayed startup
+            # Inicialização com atraso
             delayed_conversion,
             delayed_control,
             LogInfo(msg="F1TENTH System (No LiDAR) Ready!"),
