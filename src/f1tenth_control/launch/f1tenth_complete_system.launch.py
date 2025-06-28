@@ -39,10 +39,9 @@ from launch.conditions import IfCondition
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
-    FindPackagePrefix,
 )
 from launch_ros.actions import Node, SetParameter
-from launch_ros.substitutions import FindPackageShare
+from launch_ros.substitutions import FindPackageShare, FindPackagePrefix
 
 
 def generate_launch_description():
