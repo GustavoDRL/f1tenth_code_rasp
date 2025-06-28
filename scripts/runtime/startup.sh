@@ -1,8 +1,9 @@
 #!/bin/bash
 # =============================================================================
 # F1TENTH Startup Script - Inicialização Automática do Sistema
-# Versão: 2.0.0
-# Descrição: Script otimizado para inicialização automática via systemd
+# Versão: 2.1.0
+# Descrição: Script robusto para inicialização automática via systemd,
+#            com lógica de repetição, validação e gerenciamento de processo.
 # =============================================================================
 
 # Proteções e configuração inicial
@@ -19,14 +20,15 @@ source "$SCRIPT_DIR/../utils/config_manager.sh"
 # =============================================================================
 
 # Configurações padrão (podem ser sobrescritas por variáveis de ambiente)
-STARTUP_MODE="${F1TENTH_STARTUP_MODE:-complete}"  # complete|minimal|servo-only
+STARTUP_MODE="${F1TENTH_STARTUP_MODE:-minimal}" # complete|minimal|servo-only
 AUTO_BUILD="${F1TENTH_AUTO_BUILD:-false}"
 BUILD_TIMEOUT="${F1TENTH_BUILD_TIMEOUT:-300}"      # 5 minutos
 STARTUP_DELAY="${F1TENTH_STARTUP_DELAY:-5}"        # 5 segundos
+VALIDATION_TIMEOUT="${F1TENTH_VALIDATION_TIMEOUT:-20}" # 20 segundos
 MAX_STARTUP_ATTEMPTS="${F1TENTH_MAX_STARTUP_ATTEMPTS:-3}"
 
 # Estado interno
-CURRENT_ATTEMPT=1
+ROS_LAUNCH_PID=""
 STARTUP_SUCCESS=false
 
 # =============================================================================
@@ -35,28 +37,29 @@ STARTUP_SUCCESS=false
 
 usage() {
     cat << EOF
-🚀 F1TENTH Startup Script v2.0.0
+🚀 F1TENTH Startup Script v2.1.0
 
 USAGE:
     $0 [MODE] [OPTIONS]
 
 MODES:
-    complete                  Sistema completo (default)
-    minimal                   Sistema mínimo (sem LiDAR)
-    servo-only                Apenas controle servo
+    minimal                   Sistema mínimo (servo + motor) [default]
+    complete                  Sistema completo (com LiDAR)
+    servo-only                Apenas controle do servo
     
 OPTIONS:
-    --auto-build              Build automático se necessário
-    --build-timeout SECONDS   Timeout para build (default: $BUILD_TIMEOUT)
-    --delay SECONDS           Delay inicial (default: $STARTUP_DELAY)
-    --max-attempts N          Máximo tentativas (default: $MAX_STARTUP_ATTEMPTS)
-    -h, --help                Mostrar esta ajuda
+    --auto-build              Executa build automático se o workspace não estiver compilado.
+    --build-timeout SECONDS   Timeout para o build (default: $BUILD_TIMEOUT).
+    --delay SECONDS           Delay inicial antes do primeiro lançamento (default: $STARTUP_DELAY).
+    --validation-timeout SECONDS Timeout para validação dos nós ROS2 (default: $VALIDATION_TIMEOUT).
+    --max-attempts N          Máximo de tentativas de inicialização (default: $MAX_STARTUP_ATTEMPTS).
+    -h, --help                Mostrar esta ajuda.
 
 EXAMPLES:
-    $0                        # Startup completo padrão
-    $0 minimal                # Sistema sem LiDAR
-    $0 --auto-build           # Com build automático
-    systemctl start f1tenth  # Via systemd
+    $0                        # Startup padrão (modo minimal).
+    $0 complete               # Inicia o sistema completo com LiDAR.
+    $0 --auto-build           # Habilita o build automático antes de iniciar.
+    systemctl start f1tenth   # Exemplo de uso via systemd.
 
 EOF
 }
@@ -78,6 +81,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --delay)
             STARTUP_DELAY="$2"
+            shift 2
+            ;;
+        --validation-timeout)
+            VALIDATION_TIMEOUT="$2"
             shift 2
             ;;
         --max-attempts)
@@ -103,229 +110,182 @@ done
 validate_startup_environment() {
     f1tenth_log_info "Validando ambiente de startup..."
     
-    # Verificar workspace
     if [[ ! -f "$WORKSPACE_ROOT/src/f1tenth_control/package.xml" ]]; then
-        f1tenth_log_error "Workspace F1TENTH não encontrado!"
-        f1tenth_log_info "Workspace esperado: $WORKSPACE_ROOT"
+        f1tenth_log_error "Workspace F1TENTH não encontrado em: $WORKSPACE_ROOT"
         exit 1
     fi
     
-    # Verificar se ROS2 está disponível
     if ! command -v ros2 >/dev/null 2>&1; then
-        f1tenth_log_error "ROS2 não encontrado no PATH"
-        f1tenth_log_info "Execute: source /opt/ros/humble/setup.bash"
+        f1tenth_log_error "Comando 'ros2' não encontrado. Faça o source do ambiente ROS2."
         exit 1
     fi
     
-    # Verificar se workspace foi compilado
     if [[ ! -f "$WORKSPACE_ROOT/install/setup.bash" ]]; then
         if [[ "$AUTO_BUILD" == "true" ]]; then
             f1tenth_log_warn "Workspace não compilado. Iniciando build automático..."
             execute_auto_build
         else
-            f1tenth_log_error "Workspace não compilado!"
-            f1tenth_log_info "Execute: ./scripts/build/master_build.sh"
-            f1tenth_log_info "Ou use: $0 --auto-build"
+            f1tenth_log_error "Workspace não compilado! Execute ./scripts/build/master_build.sh ou use --auto-build."
             exit 1
         fi
     fi
     
-    f1tenth_log_success "Ambiente validado"
+    f1tenth_log_success "Ambiente validado."
 }
 
 execute_auto_build() {
-    f1tenth_log_info "Executando build automático..."
-    
+    f1tenth_log_info "Executando build automático com timeout de ${BUILD_TIMEOUT}s..."
     local build_script="$SCRIPT_DIR/../build/master_build.sh"
     
     if [[ ! -x "$build_script" ]]; then
-        f1tenth_log_error "Script de build não encontrado: $build_script"
+        f1tenth_log_error "Script de build não encontrado ou não executável: $build_script"
         exit 1
     fi
     
-    # Executar build com timeout
-    if timeout "$BUILD_TIMEOUT" "$build_script" --quick --no-test; then
-        f1tenth_log_success "Build automático concluído"
-    else
-        f1tenth_log_error "Build automático falhou ou timeout ($BUILD_TIMEOUT s)"
+    if ! timeout "$BUILD_TIMEOUT" "$build_script" --quick --no-test; then
+        f1tenth_log_error "Build automático falhou ou excedeu o timeout."
         exit 1
     fi
+    f1tenth_log_success "Build automático concluído."
 }
 
 setup_runtime_environment() {
     f1tenth_log_info "Configurando ambiente de runtime..."
     
-    # Source ROS2
     f1tenth_source_ros2
-    
-    # Source workspace
     source "$WORKSPACE_ROOT/install/setup.bash"
+    export RMW_IMPLEMENTATION="${F1TENTH_RMW_IMPLEMENTATION:-rmw_fastrtps_cpp}"
     
-    # Configurar middleware
-    export RMW_IMPLEMENTATION="$F1TENTH_RMW_IMPLEMENTATION"
-    
-    # Entrar no workspace
     cd "$WORKSPACE_ROOT"
-    
-    # Verificar e configurar serviços de hardware
     configure_hardware_services
     
-    f1tenth_log_success "Ambiente de runtime configurado"
+    f1tenth_log_success "Ambiente de runtime configurado."
 }
 
 configure_hardware_services() {
-    f1tenth_log_info "Configurando serviços de hardware..."
+    f1tenth_log_info "Verificando e configurando serviços de hardware..."
     
-    # pigpiod
     if command -v pigpiod >/dev/null 2>&1; then
-        if ! systemctl is-active --quiet pigpiod; then
-            f1tenth_log_info "Iniciando pigpiod..."
-            if sudo systemctl start pigpiod; then
-                f1tenth_log_success "pigpiod iniciado"
+        if ! pgrep -x "pigpiod" > /dev/null; then
+            f1tenth_log_info "Iniciando serviço 'pigpiod'..."
+            if sudo pigpiod; then
+                f1tenth_log_success "'pigpiod' iniciado."
             else
-                f1tenth_log_warn "Falha ao iniciar pigpiod"
+                f1tenth_log_warn "Falha ao iniciar 'pigpiod'. O controle do servo pode falhar."
             fi
         else
-            f1tenth_log_info "pigpiod já ativo"
+            f1tenth_log_info "'pigpiod' já está ativo."
         fi
     else
-        f1tenth_log_warn "pigpiod não instalado"
-    fi
-    
-    # Verificar permissões
-    local current_groups
-    current_groups=$(groups)
-    
-    if ! echo "$current_groups" | grep -q "gpio"; then
-        f1tenth_log_warn "Usuário não está no grupo gpio"
-    fi
-    
-    if ! echo "$current_groups" | grep -q "dialout"; then
-        f1tenth_log_warn "Usuário não está no grupo dialout"
+        f1tenth_log_warn "'pigpiod' não encontrado. O controle do servo não funcionará."
     fi
 }
 
-select_launch_configuration() {
+select_launch_file() {
     local launch_file=""
-    
     case "$STARTUP_MODE" in
-        "complete")
-            launch_file="f1tenth_complete_system.launch.py"
-            f1tenth_log_info "Modo: Sistema completo (servo + motor + LiDAR)"
-            ;;
-        "minimal")
-            launch_file="f1tenth_system_no_lidar.launch.py"
-            f1tenth_log_info "Modo: Sistema mínimo (servo + motor)"
-            ;;
-        "servo-only")
-            launch_file="f1tenth_servo_only.launch.py"
-            f1tenth_log_info "Modo: Apenas servo"
-            ;;
+        "complete")   launch_file="f1tenth_complete_system.launch.py";;
+        "minimal")    launch_file="f1tenth_system_no_lidar.launch.py";;
+        "servo-only") launch_file="f1tenth_servo_only.launch.py";;
         *)
             f1tenth_log_error "Modo de startup inválido: $STARTUP_MODE"
             exit 1
             ;;
     esac
     
-    # Verificar se launch file existe
-    local launch_path="$WORKSPACE_ROOT/install/f1tenth_control/share/f1tenth_control/launch/$launch_file"
-    
+    local launch_path
+    launch_path=$(ros2 pkg prefix f1tenth_control)/share/f1tenth_control/launch/$launch_file
     if [[ ! -f "$launch_path" ]]; then
-        f1tenth_log_error "Launch file não encontrado: $launch_file"
-        f1tenth_log_info "Execute build: ./scripts/build/master_build.sh"
+        f1tenth_log_error "Arquivo de lançamento não encontrado: $launch_file"
+        f1tenth_log_info "Verifique se o workspace foi compilado corretamente."
         exit 1
     fi
-    
     echo "$launch_file"
 }
 
 attempt_system_startup() {
     local launch_file
-    launch_file=$(select_launch_configuration)
+    launch_file=$(select_launch_file)
     
-    f1tenth_log_info "Tentativa $CURRENT_ATTEMPT/$MAX_STARTUP_ATTEMPTS"
-    f1tenth_log_info "Iniciando: $launch_file"
+    f1tenth_log_info "Iniciando: ros2 launch f1tenth_control $launch_file"
     
-    # Delay inicial se especificado
-    if [[ $STARTUP_DELAY -gt 0 ]]; then
-        f1tenth_log_info "Aguardando ${STARTUP_DELAY}s antes do startup..."
-        sleep "$STARTUP_DELAY"
-    fi
-    
-    # Iniciar sistema
-    f1tenth_log_info "Executando ros2 launch..."
-    
-    # Usar exec para substituir o processo atual pelo launch
-    # Isso é importante para systemd gerenciar corretamente o serviço
-    exec ros2 launch f1tenth_control "$launch_file"
+    # Executa o launch em segundo plano para que o script possa monitorá-lo
+    ros2 launch f1tenth_control "$launch_file" &
+    ROS_LAUNCH_PID=$!
+    f1tenth_log_info "Processo de lançamento iniciado com PID: $ROS_LAUNCH_PID"
 }
 
 validate_system_startup() {
-    f1tenth_log_info "Validando startup do sistema..."
+    f1tenth_log_info "Validando startup do sistema por até ${VALIDATION_TIMEOUT}s..."
+    local elapsed=0
     
-    # Aguardar sistema inicializar
-    sleep 10
+    while [[ $elapsed -lt $VALIDATION_TIMEOUT ]]; do
+        # Verifica se o processo de launch ainda está vivo
+        if ! ps -p "$ROS_LAUNCH_PID" > /dev/null; then
+            f1tenth_log_error "Processo de lançamento (PID: $ROS_LAUNCH_PID) terminou prematuramente."
+            return 1
+        fi
+        
+        # Verifica se há nós ativos (mais de 1, pois o launch pode criar um nó próprio)
+        local active_nodes
+        active_nodes=$(ros2 node list 2>/dev/null | wc -l || echo "0")
+        if [[ $active_nodes -gt 1 ]]; then
+            f1tenth_log_success "Sistema validado com $active_nodes nós ativos."
+            return 0
+        fi
+        
+        sleep 1
+        ((elapsed++))
+    done
     
-    # Verificar nós ativos
-    local active_nodes
-    active_nodes=$(ros2 node list 2>/dev/null | wc -l || echo "0")
-    
-    if [[ $active_nodes -gt 0 ]]; then
-        f1tenth_log_success "Sistema iniciado com $active_nodes nós"
-        STARTUP_SUCCESS=true
-        return 0
-    else
-        f1tenth_log_error "Nenhum nó ROS2 detectado"
-        return 1
-    fi
+    f1tenth_log_error "Timeout de validação. Nenhum nó ROS2 funcional detectado."
+    return 1
 }
 
 handle_startup_failure() {
-    f1tenth_log_error "Falha no startup (tentativa $CURRENT_ATTEMPT)"
+    local attempt_num=$1
+    f1tenth_log_error "Falha no startup (tentativa $attempt_num/$MAX_STARTUP_ATTEMPTS)"
     
-    # Cleanup de processos
-    cleanup_ros_processes
-    
-    if [[ $CURRENT_ATTEMPT -lt $MAX_STARTUP_ATTEMPTS ]]; then
-        ((CURRENT_ATTEMPT++))
-        f1tenth_log_info "Tentando novamente em 5 segundos..."
-        sleep 5
-        attempt_system_startup
-    else
-        f1tenth_log_error "Máximo de tentativas atingido. Startup falhou."
-        exit 1
+    if [[ -n "$ROS_LAUNCH_PID" ]]; then
+        f1tenth_log_info "Limpando processo de launch falho (PID: $ROS_LAUNCH_PID)..."
+        # Mata o grupo de processos para encerrar todos os filhos
+        kill -SIGTERM -- "-$ROS_LAUNCH_PID" 2>/dev/null || true
+        sleep 2
+        kill -SIGKILL -- "-$ROS_LAUNCH_PID" 2>/dev/null || true
+        ROS_LAUNCH_PID=""
     fi
+    
+    cleanup_ros_processes # Fallback para garantir limpeza
 }
 
 cleanup_ros_processes() {
-    f1tenth_log_info "Limpando processos ROS2..."
-    
-    # Matar processos ROS2 remanescentes
-    pkill -f "ros2" 2>/dev/null || true
-    pkill -f "f1tenth" 2>/dev/null || true
-    
-    # Aguardar cleanup
-    sleep 2
-    
-    f1tenth_log_info "Cleanup concluído"
+    f1tenth_log_info "Executando limpeza de processos ROS2 remanescentes..."
+    # Abordagem mais direcionada para evitar matar processos não relacionados
+    pkill -f "launch.main.py" 2>/dev/null || true
+    pkill -f "f1tenth_control" 2>/dev/null || true
+    sleep 1
+    f1tenth_log_info "Cleanup concluído."
 }
 
 # =============================================================================
 # TRATAMENTO DE SINAIS
 # =============================================================================
 
-# Função para shutdown graceful
 graceful_shutdown() {
-    f1tenth_log_info "Recebido sinal de shutdown..."
+    f1tenth_log_info "Recebido sinal de shutdown. Encerrando F1TENTH..."
     
-    # Cleanup
+    if [[ -n "$ROS_LAUNCH_PID" ]]; then
+        f1tenth_log_info "Enviando SIGTERM para o grupo de processos (PID: $ROS_LAUNCH_PID)..."
+        kill -SIGTERM -- "-$ROS_LAUNCH_PID" 2>/dev/null || true
+        sleep 2
+    fi
+    
     cleanup_ros_processes
     
-    f1tenth_log_info "F1TENTH startup finalizado"
+    f1tenth_log_info "F1TENTH startup finalizado."
     exit 0
 }
 
-# Registrar handlers de sinal
 trap graceful_shutdown SIGTERM SIGINT
 
 # =============================================================================
@@ -333,36 +293,45 @@ trap graceful_shutdown SIGTERM SIGINT
 # =============================================================================
 
 main() {
-    # Não usar print_header aqui para não interferir com systemd logs
-    f1tenth_log_info "F1TENTH Startup v2.0.0 - Modo: $STARTUP_MODE"
+    f1tenth_log_info "F1TENTH Startup v2.1.0 - Modo: $STARTUP_MODE"
     
-    # Validações e configuração
     validate_startup_environment
     setup_runtime_environment
     
-    # Loop de tentativas de startup
-    while [[ $CURRENT_ATTEMPT -le $MAX_STARTUP_ATTEMPTS ]] && [[ "$STARTUP_SUCCESS" == "false" ]]; do
-        if attempt_system_startup; then
-            validate_system_startup
-        else
-            handle_startup_failure
+    if [[ $STARTUP_DELAY -gt 0 ]]; then
+        f1tenth_log_info "Aguardando ${STARTUP_DELAY}s antes da primeira tentativa..."
+        sleep "$STARTUP_DELAY"
+    fi
+    
+    local current_attempt=1
+    while [[ $current_attempt -le $MAX_STARTUP_ATTEMPTS ]]; do
+        f1tenth_log_info "--- Tentativa de Startup $current_attempt/$MAX_STARTUP_ATTEMPTS ---"
+        
+        attempt_system_startup
+        
+        if validate_system_startup; then
+            STARTUP_SUCCESS=true
+            break
         fi
+        
+        handle_startup_failure "$current_attempt"
+        
+        if [[ $current_attempt -lt $MAX_STARTUP_ATTEMPTS ]]; then
+            f1tenth_log_info "Aguardando 5s para a próxima tentativa..."
+            sleep 5
+        fi
+        ((current_attempt++))
     done
     
     if [[ "$STARTUP_SUCCESS" == "true" ]]; then
-        f1tenth_log_success "F1TENTH sistema iniciado com sucesso!"
+        f1tenth_log_success "F1TENTH sistema iniciado com sucesso! Monitorando processo (PID: $ROS_LAUNCH_PID)..."
         
-        # Manter o script rodando para systemd
-        while true; do
-            sleep 30
-            # Verificar se sistema ainda está rodando
-            if [[ $(ros2 node list 2>/dev/null | wc -l) -eq 0 ]]; then
-                f1tenth_log_error "Sistema ROS2 parou inesperadamente"
-                exit 1
-            fi
-        done
+        wait "$ROS_LAUNCH_PID"
+        local exit_code=$?
+        f1tenth_log_info "Processo ROS2 (PID: $ROS_LAUNCH_PID) finalizado com código de saída: $exit_code."
+        exit $exit_code
     else
-        f1tenth_log_error "Falha ao iniciar sistema F1TENTH"
+        f1tenth_log_error "Falha ao iniciar o sistema F1TENTH após $MAX_STARTUP_ATTEMPTS tentativas."
         exit 1
     fi
 }
@@ -371,7 +340,4 @@ main() {
 # EXECUÇÃO
 # =============================================================================
 
-# Executar apenas se script for chamado diretamente
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi 
+main "$@" 
