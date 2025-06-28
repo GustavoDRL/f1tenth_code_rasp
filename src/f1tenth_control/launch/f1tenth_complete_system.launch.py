@@ -8,12 +8,17 @@ Para Raspberry Pi 4B com controle manual por teclado
 Componentes:
 - VESC Motor Controller (USB)
 - Servo Steering (GPIO PWM)
-- YDLiDAR X4 (USB)
+- YDLiDAR X4 (USB) com configuração personalizada (`custom_x4.yaml`)
 - Keyboard Control Interface
 - Real-time Odometry & TF
 
 Uso:
     ros2 launch f1tenth_control f1tenth_complete_system.launch.py
+
+Detalhes da Configuração do LiDAR:
+- O arquivo `custom_x4.yaml` é usado para definir `isSingleChannel: true`,
+  essencial para a operação correta de alguns modelos YDLIDAR X4.
+- A frequência do scan está configurada para 10Hz no mesmo arquivo.
 
 Controles de Teclado:
     W/S: Acelerar/Frear
@@ -23,9 +28,19 @@ Controles de Teclado:
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, TimerAction, LogInfo
+from launch.actions import (
+    DeclareLaunchArgument,
+    GroupAction,
+    TimerAction,
+    LogInfo,
+    ExecuteProcess,
+)
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import (
+    LaunchConfiguration,
+    PathJoinSubstitution,
+    FindPackagePrefix,
+)
 from launch_ros.actions import Node, SetParameter
 from launch_ros.substitutions import FindPackageShare
 
@@ -56,8 +71,10 @@ def generate_launch_description():
         [FindPackageShare("vesc_config"), "config", "vesc_config.yaml"]
     )
 
+    # Configuração customizada do LiDAR para garantir a operação correta.
+    # Usa 'isSingleChannel: true' e define a frequência para 10Hz.
     lidar_config = PathJoinSubstitution(
-        [FindPackageShare("ydlidar_ros2_driver"), "params", "X4.yaml"]
+        [FindPackageShare("ydlidar_ros2_driver"), "params", "custom_x4.yaml"]
     )
 
     # ==========================================================================
@@ -85,16 +102,26 @@ def generate_launch_description():
                 respawn_delay=2.0,
             ),
             # Servo Control Node (GPIO PWM)
-            Node(
-                package="f1tenth_control",
-                executable="servo_control_node",
-                name="servo_control_node",
-                namespace=LaunchConfiguration("namespace"),
-                parameters=[control_config],
+            ExecuteProcess(
+                cmd=[
+                    PathJoinSubstitution(
+                        [
+                            FindPackagePrefix("f1tenth_control"),
+                            "bin",
+                            "servo_control_node",
+                        ]
+                    ),
+                    "--ros-args",
+                    "--params-file",
+                    control_config,
+                    "-r",
+                    ["__ns:=/", LaunchConfiguration("namespace")],
+                    "-r",
+                    # Renomeia para carregar os parâmetros corretos do YAML
+                    "__node:=enhanced_servo_control_node",
+                ],
                 output="screen",
                 emulate_tty=True,
-                respawn=True,
-                respawn_delay=2.0,
             ),
             # YDLiDAR X4 Driver
             Node(
@@ -151,27 +178,6 @@ def generate_launch_description():
     )
 
     # ==========================================================================
-    # CONTROL INTERFACE
-    # ==========================================================================
-    control_interface = GroupAction(
-        [
-            LogInfo(msg="Launching keyboard control interface..."),
-            # Keyboard Control Interface
-            Node(
-                package="joy_converter",
-                executable="joy_keyboard",
-                name="keyboard_converter",
-                parameters=[control_config],
-                remappings=[
-                    ("drive", "/drive"),
-                ],
-                output="screen",
-                emulate_tty=True,
-            ),
-        ]
-    )
-
-    # ==========================================================================
     # TRANSFORM PUBLISHERS
     # ==========================================================================
     transform_publishers = GroupAction(
@@ -202,8 +208,6 @@ def generate_launch_description():
     # ==========================================================================
     delayed_conversion = TimerAction(period=3.0, actions=[conversion_nodes])
 
-    delayed_control = TimerAction(period=5.0, actions=[control_interface])
-
     # ==========================================================================
     # LAUNCH DESCRIPTION ASSEMBLY
     # ==========================================================================
@@ -221,8 +225,10 @@ def generate_launch_description():
             transform_publishers,
             # Delayed startup
             delayed_conversion,
-            delayed_control,
             LogInfo(msg="F1TENTH Complete System Ready!"),
+            LogInfo(
+                msg="Para controle manual, execute em um novo terminal: f1tenth_keyboard"
+            ),
         ]
     )
 
@@ -237,17 +243,13 @@ if __name__ == "__main__":
     print("This file launches the complete F1TENTH hybrid control system.")
     print("Usage: ros2 launch f1tenth_control f1tenth_complete_system.launch.py")
     print("")
+    print("NOTE: Keyboard control node must be started in a separate terminal:")
+    print("f1tenth_keyboard")
+    print("")
     print("System Components:")
     print("- VESC Motor Controller (USB)")
     print("- Servo Steering Control (GPIO)")
     print("- YDLiDAR X4 (USB)")
-    print("- Keyboard Control Interface")
     print("- Ackermann ↔ VESC Conversion")
     print("- Real-time Odometry")
     print("- Coordinate Frame Transforms")
-    print("")
-    print("Expected Result:")
-    print("- W/S keys control motor speed")
-    print("- A/D keys control steering servo")
-    print("- Space key stops the vehicle")
-    print("- Q key exits the control interface")
