@@ -4,17 +4,16 @@
   <name>f1tenth_control</name>
   <version>0.0.1</version>
   <description>Controle integrado F1TENTH para Raspberry Pi (VESC + Servo)</description>
-  <maintainer email="seu_email@example.com">seu_nome</maintainer>
-  <license>TODO: License declaration</license> <!-- Ex: Apache License 2.0 -->
+  <maintainer email="dev@f1tenth.org">F1TENTH Team</maintainer>
+  <license>MIT</license>
 
-  <!-- Dependências de buildtool, geralmente ament_python para pacotes Python -->
   <buildtool_depend>ament_python</buildtool_depend>
 
-  <!-- Dependências de execução (necessárias para rodar o código) -->
+  <!-- Dependências de execução -->
   <exec_depend>rclpy</exec_depend>
-  <!-- Adicione outras dependências de execução se necessário, e.g.: -->
-  <!-- <exec_depend>std_msgs</exec_depend> -->
-  <!-- <exec_depend>sensor_msgs</exec_depend> -->
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>ackermann_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
 
   <!-- Dependências de teste -->
   <test_depend>ament_copyright</test_depend>
@@ -25,4 +24,4 @@
   <export>
     <build_type>ament_python</build_type>
   </export>
-</package> 
+</package>
