@@ -26,10 +26,16 @@ Controles de Teclado:
 """
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, TimerAction, LogInfo
+from launch.actions import (
+    DeclareLaunchArgument,
+    GroupAction,
+    TimerAction,
+    LogInfo,
+    ExecuteProcess,
+)
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
-from launch_ros.substitutions import FindPackageShare
+from launch_ros.substitutions import FindPackageShare, FindPackagePrefix
 
 
 def generate_launch_description():
@@ -81,16 +87,27 @@ def generate_launch_description():
                 respawn_delay=2.0,
             ),
             # Nó de Controle do Servo (GPIO PWM) - VERSÃO AVANÇADA
-            Node(
-                package="f1tenth_control",
-                executable="enhanced_servo_control_node",  # Executável correto
-                name="servo_control_node",  # Nome para carregar params do YAML
-                namespace=LaunchConfiguration("namespace"),
-                parameters=[control_config],
+            # WORKAROUND: Usando ExecuteProcess para chamar o executável diretamente,
+            # pois ros2 launch não o encontra no ambiente ARM64/Humble.
+            ExecuteProcess(
+                cmd=[
+                    PathJoinSubstitution(
+                        [
+                            FindPackagePrefix("f1tenth_control"),
+                            "bin",
+                            "enhanced_servo_control_node",
+                        ]
+                    ),
+                    "--ros-args",
+                    "--params-file",
+                    control_config,
+                    "-r",
+                    ["__ns:=/", LaunchConfiguration("namespace")],
+                    "-r",
+                    "__node:=servo_control_node",
+                ],
                 output="screen",
                 emulate_tty=True,
-                respawn=True,
-                respawn_delay=2.0,
             ),
         ]
     )
