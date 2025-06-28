@@ -140,25 +140,6 @@ def generate_launch_description():
     )
 
     # ==========================================================================
-    # INTERFACE DE CONTROLE
-    # ==========================================================================
-    control_interface = GroupAction(
-        [
-            LogInfo(msg="Lançando interface de controle por teclado..."),
-            # Interface de Controle por Teclado
-            Node(
-                package="joy_converter",
-                executable="joy_keyboard",
-                name="joy_keyboard_converter",  # Nome correto para carregar params
-                parameters=[control_config],
-                remappings=[("drive", "/drive")],
-                output="screen",
-                emulate_tty=True,
-            ),
-        ]
-    )
-
-    # ==========================================================================
     # PUBLICADORES DE TRANSFORMAÇÕES (TF)
     # ==========================================================================
     transform_publishers = GroupAction(
@@ -176,11 +157,9 @@ def generate_launch_description():
     )
 
     # ==========================================================================
-    # SEQUÊNCIA DE INICIALIZAÇÃO ATRASADA
+    # DELAYED STARTUP SEQUENCE
     # ==========================================================================
-    # Atraso para garantir que os drivers de hardware estejam prontos
     delayed_conversion = TimerAction(period=3.0, actions=[conversion_nodes])
-    delayed_control = TimerAction(period=4.0, actions=[control_interface])
 
     # ==========================================================================
     # MONTAGEM DA DESCRIÇÃO DE LANÇAMENTO
@@ -194,12 +173,27 @@ def generate_launch_description():
             LogInfo(msg="Hardware: VESC + Enhanced Servo"),
             LogInfo(msg="Controls: W/S=Motor, A/D=Servo, Space=Stop"),
             LogInfo(msg="========================================="),
-            # Inicialização imediata
+            # Immediate startup
             hardware_drivers,
             transform_publishers,
-            # Inicialização com atraso
+            # Delayed startup
             delayed_conversion,
-            delayed_control,
             LogInfo(msg="F1TENTH System (No LiDAR) Ready!"),
+            LogInfo(
+                msg="Para controle manual, execute em um novo terminal: ros2 run joy_converter joy_keyboard_converter"
+            ),
         ]
     )
+
+
+# =============================================================================
+# LAUNCH FILE VALIDATION
+# =============================================================================
+if __name__ == "__main__":
+    print("This file launches the core F1TENTH hybrid control system (NO LiDAR).")
+    print("")
+    print("NOTE: Keyboard control node must be started in a separate terminal:")
+    print("ros2 run joy_converter joy_keyboard_converter")
+    print("")
+    print("System Components:")
+    print("- VESC Motor Controller (USB)")
