@@ -65,15 +65,35 @@ def generate_launch_description():
         [FindPackageShare("f1tenth_control"), "config", "system_config.yaml"]
     )
 
-    vesc_config = PathJoinSubstitution(
-        [FindPackageShare("vesc_config"), "config", "vesc_config.yaml"]
-    )
+    # Parâmetros do VESC - A porta é definida diretamente para maior robustez
+    vesc_params = {
+        "port": "/dev/sensors/vesc",
+    }
 
-    # Configuração customizada do LiDAR para garantir a operação correta.
-    # Usa 'isSingleChannel: true' e define a frequência para 10Hz.
-    lidar_config = PathJoinSubstitution(
-        [FindPackageShare("ydlidar_ros2_driver"), "params", "custom_x4.yaml"]
-    )
+    # Parâmetros do LiDAR definidos inline para garantir funcionamento
+    lidar_params = {
+        "port": "/dev/ydlidar",
+        "frame_id": "laser_frame",
+        "ignore_array": "",
+        "baudrate": 128000,
+        "lidar_type": 1,
+        "device_type": 0,
+        "sample_rate": 5,
+        "abnormal_check_count": 4,
+        "fixed_resolution": True,
+        "reversion": True,
+        "inverted": True,
+        "auto_reconnect": True,
+        "isSingleChannel": True,
+        "intensity": False,
+        "support_motor_dtr": False,
+        "angle_max": 180.0,
+        "angle_min": -180.0,
+        "range_max": 12.0,
+        "range_min": 0.1,
+        "frequency": 10.0,
+        "invalid_range_is_inf": False,
+    }
 
     # ==========================================================================
     # GLOBAL PARAMETERS
@@ -94,7 +114,7 @@ def generate_launch_description():
                 package="vesc_driver",
                 executable="vesc_driver_node",
                 name="vesc_driver",
-                parameters=[vesc_config],
+                parameters=[vesc_params],  # Usa os parâmetros definidos aqui
                 output="screen",
                 respawn=True,
                 respawn_delay=2.0,
@@ -126,7 +146,7 @@ def generate_launch_description():
                 package="ydlidar_ros2_driver",
                 executable="ydlidar_ros2_driver_node",
                 name="ydlidar_node",
-                parameters=[lidar_config],
+                parameters=[lidar_params],  # Usa os parâmetros inline
                 output="screen",
                 respawn=True,
                 respawn_delay=3.0,
