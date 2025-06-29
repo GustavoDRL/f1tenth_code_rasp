@@ -226,7 +226,7 @@ def generate_launch_description():
             LogInfo(msg="F1TENTH Complete System Ready!"),
             LogInfo(
                 msg="Para controle manual, execute: "
-                "ros2 run f1tenth_control keyboard_control"
+                "ros2 run f1tenth_control keyboard_controla"
             ),
         ]
     )
