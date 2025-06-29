@@ -14,6 +14,7 @@ Componentes:
 
 Uso:
     ros2 launch f1tenth_control f1tenth_complete_system.launch.py
+    a
 
 Detalhes da Configuração do LiDAR:
 - O arquivo `custom_x4.yaml` é usado para definir `isSingleChannel: true`,
