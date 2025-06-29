@@ -20,11 +20,6 @@ Detalhes da Configuração do LiDAR:
   essencial para a operação correta de alguns modelos YDLIDAR X4.
 - A frequência do scan está configurada para 10Hz no mesmo arquivo.
 
-Controles de Teclado:
-    W/S: Acelerar/Frear
-    A/D: Esquerda/Direita
-    Espaço: Parar
-    Q: Sair
 """
 
 from launch import LaunchDescription
@@ -100,26 +95,13 @@ def generate_launch_description():
                 respawn_delay=2.0,
             ),
             # Servo Control Node (GPIO PWM)
-            ExecuteProcess(
-                cmd=[
-                    PathJoinSubstitution(
-                        [
-                            FindPackagePrefix("f1tenth_control"),
-                            "bin",
-                            "servo_control_node",
-                        ]
-                    ),
-                    "--ros-args",
-                    "--params-file",
-                    control_config,
-                    "-r",
-                    ["__ns:=/", LaunchConfiguration("namespace")],
-                    "-r",
-                    # Renomeia para carregar os parâmetros corretos do YAML
-                    "__node:=enhanced_servo_control_node",
-                ],
+            Node(
+                package="f1tenth_control",
+                executable="servo_control_node",
+                name="enhanced_servo_control_node",
+                namespace=LaunchConfiguration("namespace"),
+                parameters=[control_config],
                 output="screen",
-                emulate_tty=True,
             ),
             # YDLiDAR X4 Driver
             Node(
