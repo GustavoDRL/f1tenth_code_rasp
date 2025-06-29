@@ -239,7 +239,7 @@ if __name__ == "__main__":
     print("F1TENTH Complete System Launch File")
     print("===================================")
     print("This file launches the complete F1TENTH hybrid control system.")
-    print("Usage: ros2 launch f1tenth_control f1tenth_complete_system.launch.py")
+    print("Usage: ros2 launch f1tenth_control " "f1tenth_complete_system.launch.py")
     print("")
     print("NOTE: Keyboard control node must be started in a separate terminal:")
     print("ros2 run f1tenth_control keyboard_control")
