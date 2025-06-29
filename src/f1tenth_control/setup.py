@@ -50,6 +50,9 @@ setup(
             "enhanced_servo_control_node = f1tenth_control.enhanced_servo_control_node:main",
             "servo_calibration = f1tenth_control.servo_calibration:main",
             "test_calibrated_servo = f1tenth_control.test_calibrated_servo:main",
+            # F1TENTH Simulator Compatibility Nodes
+            "twist_to_ackermann_node = f1tenth_control.twist_to_ackermann_node:main",
+            "initialpose_handler_node = f1tenth_control.initialpose_handler_node:main",
         ],
     },
     # Configurações de build para performance
