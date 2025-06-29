@@ -35,7 +35,6 @@ from launch.actions import (
     LogInfo,
     ExecuteProcess,
 )
-from launch.conditions import IfCondition
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -226,7 +225,8 @@ def generate_launch_description():
             delayed_conversion,
             LogInfo(msg="F1TENTH Complete System Ready!"),
             LogInfo(
-                msg="Para controle manual, execute em um novo terminal: f1tenth_keyboard"
+                msg="Para controle manual, execute: "
+                "ros2 run f1tenth_control keyboard_control"
             ),
         ]
     )
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     print("Usage: ros2 launch f1tenth_control f1tenth_complete_system.launch.py")
     print("")
     print("NOTE: Keyboard control node must be started in a separate terminal:")
-    print("f1tenth_keyboard")
+    print("ros2 run f1tenth_control keyboard_control")
     print("")
     print("System Components:")
     print("- VESC Motor Controller (USB)")
