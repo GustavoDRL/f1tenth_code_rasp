@@ -151,7 +151,7 @@ def generate_launch_description():
             # Servo Control Node (GPIO PWM)
             Node(
                 package="f1tenth_control",
-                executable="servo_control_node",
+                executable="enhanced_servo_control_node",
                 name="enhanced_servo_control_node",
                 namespace=LaunchConfiguration("namespace"),
                 parameters=[control_config],
