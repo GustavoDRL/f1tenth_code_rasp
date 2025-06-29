@@ -1,53 +1,70 @@
 #!/usr/bin/env python3
 """
-Launch file simplificado - apenas LiDAR para teste
+Launch file com parâmetros inline para garantir que sejam carregados
 """
 
 from launch import LaunchDescription
 from launch.actions import LogInfo
-from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    """Generate simplified launch for LiDAR testing only."""
+    """Generate launch with inline parameters to ensure they're loaded."""
 
-    # Configuração do LiDAR (mesma que funciona)
-    lidar_config = PathJoinSubstitution(
-        [FindPackageShare("ydlidar_ros2_driver"), "params", "custom_x4.yaml"]
-    )
+    # Parâmetros extraídos diretamente do custom_x4.yaml
+    lidar_params = {
+        "port": "/dev/ydlidar",
+        "frame_id": "laser_frame",
+        "ignore_array": "",
+        "baudrate": 128000,  # IMPORTANTE: mesmo valor do comando que funciona
+        "lidar_type": 1,
+        "device_type": 0,
+        "sample_rate": 5,
+        "abnormal_check_count": 4,
+        "fixed_resolution": True,
+        "reversion": True,
+        "inverted": True,
+        "auto_reconnect": True,
+        "isSingleChannel": True,  # IMPORTANTE para o X4
+        "intensity": False,
+        "support_motor_dtr": False,
+        "angle_max": 180.0,
+        "angle_min": -180.0,
+        "range_max": 12.0,
+        "range_min": 0.1,
+        "frequency": 10.0,
+        "invalid_range_is_inf": False,
+    }
 
     return LaunchDescription(
         [
-            LogInfo(msg="Testing LiDAR only..."),
-            # YDLiDAR X4 Driver
+            LogInfo(msg="Testing LiDAR with inline parameters..."),
+            LogInfo(msg=f"Using baudrate: {lidar_params['baudrate']}"),
+            # YDLiDAR X4 Driver com parâmetros inline
             Node(
                 package="ydlidar_ros2_driver",
                 executable="ydlidar_ros2_driver_node",
-                name="ydlidar_node",
-                parameters=[lidar_config],
+                name="ydlidar_ros2_driver_node",
+                parameters=[lidar_params],
                 output="screen",
-                respawn=True,
-                respawn_delay=3.0,
             ),
-            # Transform publisher (mesmo do comando que funciona)
+            # Transform publisher
             Node(
                 package="tf2_ros",
                 executable="static_transform_publisher",
-                name="base_to_laser_tf",
+                name="static_tf_pub_laser",
                 arguments=[
                     "0.0",
                     "0.0",
-                    "0.02",  # x, y, z (mesmos valores do comando que funciona)
+                    "0.02",
                     "0",
                     "0",
-                    "0",  # roll, pitch, yaw
+                    "0",
                     "base_link",
                     "laser_frame",
                 ],
                 output="screen",
             ),
-            LogInfo(msg="LiDAR test ready!"),
+            LogInfo(msg="LiDAR inline params test ready!"),
         ]
     )
