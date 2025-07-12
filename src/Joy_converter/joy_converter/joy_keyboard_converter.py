@@ -1,138 +1,251 @@
 #!/usr/bin/env python3
-"""
-Conversor Joy Keyboard para F1TENTH
-Converte eventos de teclado do controle 8BitDo para comandos Ackermann
-Para quando o controle está em modo keyboard ao invés de joystick
-"""
-
 import rclpy
+from ackermann_msgs.msg import AckermannDriveStamped
 from rclpy.node import Node
 from sensor_msgs.msg import Joy
-from ackermann_msgs.msg import AckermannDriveStamped
-import threading
-import sys
-import select
-import termios
-import tty
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
-
-class JoyKeyboardConverter(Node):
+class JoyToAckermannImproved(Node):
     def __init__(self):
-        super().__init__("joy_keyboard_converter")
-
-        # Parâmetros
-        self.max_speed = 3.0
+        super().__init__('joy_ackermann_improved')
+        
+        # Configurações principais
+        self.max_speed = 7.0
         self.max_angle = 0.32
-        self.speed_increment = 0.5
-        self.angle_increment = 0.1
-
-        # Estado atual
+        self.deadzone = 0.05  # Deadzone menor
+        
+        # Configurações de mapeamento (podem ser ajustadas)
+        self.speed_axis = 1      # Eixo vertical do analógico esquerdo
+        self.steering_axis = 0   # Eixo horizontal do analógico esquerdo
+        self.invert_speed = False    # Se True, inverte o eixo de velocidade
+        self.invert_steering = False # Se True, inverte o eixo de direção
+        
+        # Modo de controle
+        self.control_mode = "direct"  # "direct" ou "incremental"
+        self.speed_increment = 0.2
+        self.angle_increment = 0.05
+        
+        # Estado atual (para modo incremental)
         self.current_speed = 0.0
         self.current_angle = 0.0
+        
+        # Estado dos botões (para evitar múltiplos triggers)
+        self.last_buttons = []
+        
+        # Subscribers e Publishers
+        self.subscription = self.create_subscription(
+            Joy,
+            '/joy',
+            self.joy_callback,
+            10)
+        
+        self.drive_publisher = self.create_publisher(
+            AckermannDriveStamped,
+            '/drive',
+            10)
+        
+        self.pose_publisher = self.create_publisher(
+            PoseWithCovarianceStamped,
+            '/initialpose',
+            10)
+        
+        # Timer para debug
+        self.debug_timer = self.create_timer(1.0, self.debug_callback)
+        self.last_joy_msg = None
+        
+        # Publicar pose inicial
+        self.publish_initial_pose()
+        
+        self.get_logger().info('=== JoyToAckermann Improved Iniciado ===')
+        self.get_logger().info(f'Modo de controle: {self.control_mode}')
+        self.get_logger().info(f'Deadzone: {self.deadzone}')
+        self.get_logger().info(f'Eixo velocidade: {self.speed_axis} (invertido: {self.invert_speed})')
+        self.get_logger().info(f'Eixo direção: {self.steering_axis} (invertido: {self.invert_steering})')
+        self.get_logger().info('Controles:')
+        if self.control_mode == "direct":
+            self.get_logger().info('  Analógico esquerdo: Direção e velocidade')
+        else:
+            self.get_logger().info('  Botões X/Circle: Acelerar/Frear')
+            self.get_logger().info('  Analógico esquerdo horizontal: Direção')
+        self.get_logger().info('  Botão PS: Reset posição')
+        self.get_logger().info('  Botão Triangle: Trocar modo de controle')
+        self.get_logger().info('==========================================')
 
-        # Publisher
-        self.drive_pub = self.create_publisher(AckermannDriveStamped, "/drive", 10)
+    def publish_initial_pose(self):
+        """Publica pose inicial do robô"""
+        msg_map = PoseWithCovarianceStamped()
+        msg_map.header.stamp = self.get_clock().now().to_msg()
+        msg_map.header.frame_id = 'map'
+        
+        # Pose inicial
+        msg_map.pose.pose.position.x = 0.0
+        msg_map.pose.pose.position.y = 0.0
+        msg_map.pose.pose.position.z = 0.0
+        msg_map.pose.pose.orientation.x = 0.0
+        msg_map.pose.pose.orientation.y = 0.0
+        msg_map.pose.pose.orientation.z = 0.0
+        msg_map.pose.pose.orientation.w = 1.0
+        
+        # Covariância
+        msg_map.pose.covariance = [
+            0.1, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.1
+        ]
+        
+        self.pose_publisher.publish(msg_map)
+        self.get_logger().info('Pose inicial publicada')
 
-        # Timer para publicação contínua
-        self.timer = self.create_timer(0.1, self.publish_drive)
-
-        # Configurar terminal para entrada de teclado
-        self.old_settings = termios.tcgetattr(sys.stdin)
-        tty.setcbreak(sys.stdin.fileno())
-
-        self.get_logger().info("Conversor teclado iniciado!")
-        self.get_logger().info("Controles:")
-        self.get_logger().info("  W/S: Acelerar/Frear")
-        self.get_logger().info("  A/D: Esquerda/Direita")
-        self.get_logger().info("  Espaço: Parar")
-        self.get_logger().info("  Q: Sair")
-
-        # Thread para ler teclado
-        self.running = True
-        self.keyboard_thread = threading.Thread(target=self.keyboard_reader)
-        self.keyboard_thread.daemon = True
-        self.keyboard_thread.start()
-
-    def keyboard_reader(self):
-        """Thread para ler entradas do teclado"""
-        while self.running:
-            if select.select([sys.stdin], [], [], 0.1)[0]:
-                key = sys.stdin.read(1).lower()
-                self.process_key(key)
-
-    def process_key(self, key):
-        """Processa tecla pressionada"""
-        if key == "w":  # Acelerar
-            self.current_speed = min(
-                self.max_speed, self.current_speed + self.speed_increment
+    def debug_callback(self):
+        """Callback de debug para mostrar valores dos eixos"""
+        if self.last_joy_msg and len(self.last_joy_msg.axes) >= 4:
+            axes = self.last_joy_msg.axes
+            self.get_logger().info(
+                f'Debug - Eixos RAW: [0]={axes[0]:.3f}, [1]={axes[1]:.3f}, '
+                f'[2]={axes[2]:.3f}, [3]={axes[3]:.3f}'
             )
-            self.get_logger().info(f"Acelerando: {self.current_speed:.1f} m/s")
 
-        elif key == "s":  # Frear
-            self.current_speed = max(
-                -self.max_speed, self.current_speed - self.speed_increment
-            )
-            self.get_logger().info(f"Freando: {self.current_speed:.1f} m/s")
+    def apply_deadzone(self, value):
+        """Aplica deadzone ao valor"""
+        if abs(value) < self.deadzone:
+            return 0.0
+        return value
 
-        elif key == "a":  # Esquerda
-            self.current_angle = min(
-                self.max_angle, self.current_angle + self.angle_increment
-            )
-            self.get_logger().info(f"Virando esquerda: {self.current_angle:.2f} rad")
+    def button_pressed(self, msg, button_index):
+        """Verifica se um botão foi pressionado (edge detection)"""
+        if len(msg.buttons) <= button_index:
+            return False
+        
+        # Inicializar last_buttons se necessário
+        while len(self.last_buttons) <= button_index:
+            self.last_buttons.append(0)
+        
+        current_state = msg.buttons[button_index]
+        last_state = self.last_buttons[button_index]
+        self.last_buttons[button_index] = current_state
+        
+        # Retorna True apenas na transição de 0 para 1
+        return current_state == 1 and last_state == 0
 
-        elif key == "d":  # Direita
-            self.current_angle = max(
-                -self.max_angle, self.current_angle - self.angle_increment
-            )
-            self.get_logger().info(f"Virando direita: {self.current_angle:.2f} rad")
-
-        elif key == " ":  # Parar
+    def joy_callback(self, msg):
+        """Callback principal do joystick"""
+        self.last_joy_msg = msg
+        
+        # Verificar se temos eixos suficientes
+        if len(msg.axes) < 4:
+            self.get_logger().warn('Joystick não tem eixos suficientes')
+            return
+        
+        # === BOTÕES ESPECIAIS ===
+        
+        # Botão PS (reset posição) - geralmente botão 10 ou 12
+        for ps_button in [10, 11, 12]:
+            if self.button_pressed(msg, ps_button):
+                self.get_logger().info('Botão PS pressionado - Reset posição')
+                self.publish_initial_pose()
+                self.current_speed = 0.0
+                self.current_angle = 0.0
+                break
+        
+        # Botão Triangle (trocar modo) - geralmente botão 3
+        if self.button_pressed(msg, 3):
+            self.control_mode = "incremental" if self.control_mode == "direct" else "direct"
+            self.get_logger().info(f'Modo alterado para: {self.control_mode}')
             self.current_speed = 0.0
             self.current_angle = 0.0
-            self.get_logger().info("Parando e centralizando")
+        
+        # === CONTROLE DE MOVIMENTO ===
+        
+        if self.control_mode == "direct":
+            self.direct_control(msg)
+        else:
+            self.incremental_control(msg)
+        
+        # Publicar comando
+        self.publish_ackermann_command()
 
-        elif key == "q":  # Sair
-            self.get_logger().info("Saindo...")
-            self.running = False
-            self.restore_terminal()
-            # Não chamar rclpy.shutdown() aqui - será chamado no main()
+    def direct_control(self, msg):
+        """Controle direto pelos analógicos"""
+        # Ler valores dos eixos
+        speed_raw = msg.axes[self.speed_axis]
+        steering_raw = msg.axes[self.steering_axis]
+        
+        # Aplicar inversão se necessário
+        if self.invert_speed:
+            speed_raw = -speed_raw
+        if self.invert_steering:
+            steering_raw = -steering_raw
+        
+        # Aplicar deadzone
+        speed_axis = self.apply_deadzone(speed_raw)
+        steering_axis = self.apply_deadzone(steering_raw)
+        
+        # Calcular velocidade e ângulo
+        self.current_speed = self.max_speed * speed_axis
+        self.current_angle = self.max_angle * steering_axis
+        
+        # Debug detalhado
+        if abs(speed_raw) > 0.01 or abs(steering_raw) > 0.01:
+            self.get_logger().info(
+                f'Direct - Speed: RAW={speed_raw:.3f} -> PROCESSED={speed_axis:.3f} -> FINAL={self.current_speed:.2f} | '
+                f'Steering: RAW={steering_raw:.3f} -> PROCESSED={steering_axis:.3f} -> FINAL={self.current_angle:.2f}'
+            )
 
-    def publish_drive(self):
-        """Publica comando de direção"""
-        msg = AckermannDriveStamped()
-        msg.drive.speed = self.current_speed
-        msg.drive.steering_angle = self.current_angle
+    def incremental_control(self, msg):
+        """Controle incremental por botões"""
+        # Velocidade por botões
+        if len(msg.buttons) > 0 and msg.buttons[0] == 1:  # Botão X - acelerar
+            self.current_speed = min(self.max_speed, self.current_speed + self.speed_increment)
+            
+        if len(msg.buttons) > 1 and msg.buttons[1] == 1:  # Botão Circle - frear
+            self.current_speed = max(-self.max_speed, self.current_speed - self.speed_increment)
+        
+        # Botão Square para parar
+        if len(msg.buttons) > 2 and msg.buttons[2] == 1:
+            self.current_speed = 0.0
+        
+        # Direção pelo analógico horizontal
+        steering_raw = msg.axes[self.steering_axis]
+        if self.invert_steering:
+            steering_raw = -steering_raw
+        
+        steering_axis = self.apply_deadzone(steering_raw)
+        self.current_angle = self.max_angle * steering_axis
+        
+        # Debug
+        if any(msg.buttons[:3]) or abs(steering_raw) > 0.01:
+            self.get_logger().info(
+                f'Incremental - Speed: {self.current_speed:.2f} | Steering: {self.current_angle:.2f}'
+            )
 
-        self.drive_pub.publish(msg)
-
-    def restore_terminal(self):
-        """Restaura configurações do terminal"""
-        try:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
-        except:
-            pass
-
-    def __del__(self):
-        self.restore_terminal()
-
+    def publish_ackermann_command(self):
+        """Publica comando Ackermann"""
+        ackermann_cmd = AckermannDriveStamped()
+        ackermann_cmd.header.stamp = self.get_clock().now().to_msg()
+        ackermann_cmd.header.frame_id = 'base_link'
+        ackermann_cmd.drive.speed = self.current_speed
+        ackermann_cmd.drive.steering_angle = self.current_angle
+        
+        self.drive_publisher.publish(ackermann_cmd)
 
 def main(args=None):
     rclpy.init(args=args)
-    node = None
-
+    
     try:
-        node = JoyKeyboardConverter()
-        rclpy.spin(node)
+        joy_ackermann = JoyToAckermannImproved()
+        print("JoyToAckermann Improved Initialized")
+        rclpy.spin(joy_ackermann)
     except KeyboardInterrupt:
-        pass
+        print("Shutting down...")
     finally:
-        if node:
-            node.restore_terminal()
         try:
-            rclpy.shutdown()
+            joy_ackermann.destroy_node()
         except:
-            pass  # Ignorar erro se já foi feito shutdown
+            pass
+        rclpy.shutdown()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

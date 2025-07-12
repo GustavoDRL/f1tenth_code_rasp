@@ -32,14 +32,6 @@ class JoyToAckerman(Node):
         # Debug: Criar timer para mostrar valores dos eixos
         self.debug_timer = self.create_timer(1.0, self.debug_callback)
         self.last_joy_msg = None
-        
-        # LOG DE INSTRUÇÕES
-        self.get_logger().info("=== CONTROLES DO F1TENTH ===")
-        self.get_logger().info("Analógico Esquerdo (Vertical): FRENTE")
-        self.get_logger().info("Analógico Direito (Horizontal): DIREÇÃO")
-        self.get_logger().info("L2 (Gatilho Esquerdo): RÉ")
-        self.get_logger().info("SEGURANÇA: Frente + L2 = PARAR")
-        self.get_logger().info("=" * 30)
    
     def publish_initial_pose(self):
         msg_map = PoseWithCovarianceStamped()
@@ -68,11 +60,7 @@ class JoyToAckerman(Node):
     
     def debug_callback(self):
         if self.last_joy_msg:
-            forward = self.last_joy_msg.axes[1] if len(self.last_joy_msg.axes) > 1 else 0.0
-            l2 = self.last_joy_msg.axes[4] if len(self.last_joy_msg.axes) > 4 else 0.0
-            steering = self.last_joy_msg.axes[2] if len(self.last_joy_msg.axes) > 2 else 0.0
-            
-            self.get_logger().info(f'Debug -> Frente: {forward:.2f}, L2: {l2:.2f}, Direção: {steering:.2f}')
+            self.get_logger().info(f'Joy axes: {self.last_joy_msg.axes}')
      
     def joy_callback(self, msg):
         self.last_joy_msg = msg
@@ -87,7 +75,7 @@ class JoyToAckerman(Node):
         # axes[0] = Analógico esquerdo horizontal (esquerda/direita) - PARA VIRAR
         
         speed_axis = msg.axes[1]      # Eixo que já funciona para frente
-        steering_axis = msg.axes[0]   # Eixo horizontal do mesmo analógico para virar
+        steering_axis = msg.axes[2]   # Eixo horizontal do mesmo analógico para virar
         
         # Eliminar valores muito próximos a zero para evitar movimentos indesejados
         if abs(speed_axis) < self.controller_error:
