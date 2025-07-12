@@ -5,7 +5,7 @@ import os
 package_name = "joy_converter"
 
 setup(
-    name=package_name,
+    name="joy-converter",
     version="0.0.0",
     packages=[package_name],
     data_files=[
