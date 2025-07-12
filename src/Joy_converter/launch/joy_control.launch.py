@@ -8,44 +8,7 @@ import os
 
 def generate_launch_description():
     """Generates the launch description for starting joystick control."""
-
-    # Declare launch arguments
-    declared_arguments = [
-        DeclareLaunchArgument(
-            'vesc_config',
-            default_value=PathJoinSubstitution([
-                FindPackageShare('vesc_config'), 'config', 'vesc_config.yaml'
-            ]),
-            description='Path to the VESC configuration file.'
-        ),
-    ]
-
-    # VESC Driver Node
-    vesc_driver_node = Node(
-        package='vesc_driver',
-        executable='vesc_driver_node',
-        name='vesc_driver',
-        parameters=[LaunchConfiguration('vesc_config')],
-        output='screen'
-    )
-
-    # Ackermann to VESC Node
-    ackermann_to_vesc_node = Node(
-        package='vesc_ackermann',
-        executable='ackermann_to_vesc_node',
-        name='ackermann_to_vesc',
-        parameters=[LaunchConfiguration('vesc_config')],
-        remappings=[('ackermann_cmd_in', '/drive')]
-    )
-
-    # VESC to Odometry Node
-    vesc_to_odom_node = Node(
-        package='vesc_ackermann',
-        executable='vesc_to_odom_node',
-        name='vesc_to_odom',
-        parameters=[LaunchConfiguration('vesc_config')]
-    )
-    
+   
     # Joy Node
     joy_node = Node(
         package='joy',
@@ -69,9 +32,6 @@ def generate_launch_description():
     return LaunchDescription(
         declared_arguments + 
         [
-            vesc_driver_node,
-            ackermann_to_vesc_node,
-            vesc_to_odom_node,
             joy_node,
             joy_ackerman_node
         ]
