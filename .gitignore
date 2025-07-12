@@ -152,3 +152,4 @@ devel/
 # data/
 
 # Add any other specific project files or configurations here
+src/ydlidar_ros2_driver
