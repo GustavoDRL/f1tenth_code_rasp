@@ -68,6 +68,7 @@ def generate_launch_description():
     # Parâmetros do VESC - A porta é definida diretamente para maior robustez
     vesc_params = {
         "port": "/dev/sensors/vesc",
+        "speed_max": 20000.0,
     }
 
     # Parâmetros do LiDAR definidos inline para garantir funcionamento

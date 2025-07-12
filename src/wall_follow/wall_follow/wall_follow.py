@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import math
 import time
 import numpy as np
+from typing import Optional
 
 class WallFollowHybrid(Node):
 
@@ -141,7 +142,7 @@ class WallFollowHybrid(Node):
         print("✅ Sistema inicializado e pronto!")
         print("=" * 60)
 
-    def get_range_by_angle_robust(self, scan: LaserScan, target_angle: float, search_range: float = None) -> float:
+    def get_range_by_angle_robust(self, scan: LaserScan, target_angle: float, search_range: Optional[float] = None) -> Optional[float]:
         """
         Busca robusta por dados válidos em uma faixa ao redor do ângulo alvo.
         
@@ -200,7 +201,7 @@ class WallFollowHybrid(Node):
         
         return None
 
-    def calculate_wall_error(self, msg: LaserScan) -> float:
+    def calculate_wall_error(self, msg: LaserScan) -> Optional[float]:
         """
         Calcula o erro de distância da parede usando geometria robusta.
         
