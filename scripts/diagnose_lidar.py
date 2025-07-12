@@ -5,7 +5,7 @@ Script de Diagnóstico YDLiDAR X4
 Detecta automaticamente a porta USB do YDLiDAR e testa conectividade
 
 Uso:
-    python3 scripts/diagnose_lidar.py
+    python3 scripts/diagnose_lidar.pya
 """
 
 import os
