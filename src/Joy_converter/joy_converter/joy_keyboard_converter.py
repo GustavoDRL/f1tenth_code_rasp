@@ -95,7 +95,7 @@ class JoyKeyboardConverter(Node):
             self.get_logger().info("Saindo...")
             self.running = False
             self.restore_terminal()
-            rclpy.shutdown()
+            # Não chamar rclpy.shutdown() aqui - será chamado no main()
 
     def publish_drive(self):
         """Publica comando de direção"""
@@ -118,6 +118,7 @@ class JoyKeyboardConverter(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    node = None
 
     try:
         node = JoyKeyboardConverter()
@@ -125,8 +126,12 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.restore_terminal()
-        rclpy.shutdown()
+        if node:
+            node.restore_terminal()
+        try:
+            rclpy.shutdown()
+        except:
+            pass  # Ignorar erro se já foi feito shutdown
 
 
 if __name__ == "__main__":
