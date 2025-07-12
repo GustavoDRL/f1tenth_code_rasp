@@ -70,16 +70,12 @@ class JoyToAckerman(Node):
             self.get_logger().warn('Joystick não tem eixos suficientes')
             return
         
-        # CORREÇÃO 1: Testar diferentes mapeamentos de eixos
-        # Configuração padrão (pode precisar ajustar):
-        # axes[0] = Analógico esquerdo horizontal (esquerda/direita)
-        # axes[1] = Analógico esquerdo vertical (frente/trás)
-        # axes[2] = Analógico direito horizontal
-        # axes[3] = Analógico direito vertical
+        # MAPEAMENTO SEPARADO DOS EIXOS:
+        # axes[1] = Analógico esquerdo vertical (frente/trás) - JÁ FUNCIONA PARA FRENTE
+        # axes[0] = Analógico esquerdo horizontal (esquerda/direita) - PARA VIRAR
         
-        # Teste com analógico esquerdo para direção
-        speed_axis = msg.axes[1]      # Analógico esquerdo vertical
-        steering_axis = msg.axes[0]   # Analógico esquerdo horizontal
+        speed_axis = msg.axes[1]      # Eixo que já funciona para frente
+        steering_axis = msg.axes[0]   # Eixo horizontal do mesmo analógico para virar
         
         # Eliminar valores muito próximos a zero para evitar movimentos indesejados
         if abs(speed_axis) < self.controller_error:
@@ -91,13 +87,12 @@ class JoyToAckerman(Node):
         if len(msg.buttons) > 10 and msg.buttons[10] == 1:
             self.publish_initial_pose()
         
-        # CORREÇÃO 2: Inverter sinal se necessário
-        # Se o carro não vai para trás, tente inverter o sinal da velocidade
-        speed = self.max_speed * speed_axis  # Remover o sinal negativo se estava presente
+        # VELOCIDADE: Manter como está (já funciona para frente)
+        # Se não vai para trás, pode ser problema do simulador/hardware
+        speed = self.max_speed * speed_axis
         
-        # CORREÇÃO 3: Ajustar direção
-        # Se a direção está invertida, inverter o sinal
-        steering_angle = -self.max_angle * steering_axis  # Negativo para corrigir inversão
+        # DIREÇÃO: Usar o eixo horizontal separadamente
+        steering_angle = self.max_angle * steering_axis
         
         # Publicar os comandos ackermann
         ackermann_cmd = AckermannDriveStamped()
@@ -108,9 +103,9 @@ class JoyToAckerman(Node):
         
         self.publisher.publish(ackermann_cmd)
         
-        # Debug log
-        if abs(speed) > 0.1 or abs(steering_angle) > 0.1:
-            self.get_logger().info(f'Speed: {speed:.2f}, Steering: {steering_angle:.2f}')
+        # Debug log detalhado
+        self.get_logger().info(f'Eixo velocidade (axes[1]): {speed_axis:.2f} -> Speed: {speed:.2f}')
+        self.get_logger().info(f'Eixo direção (axes[0]): {steering_axis:.2f} -> Steering: {steering_angle:.2f}')
 
 def main(args=None):
     rclpy.init(args=args)
