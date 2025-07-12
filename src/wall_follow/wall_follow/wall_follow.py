@@ -92,10 +92,11 @@ class WallFollowHybrid(Node):
         
         # ==================== CONTROLE DE VELOCIDADE ====================
         
-        self.base_speed = 1.0        # Aumentado de 0.8
-        self.max_speed = 1.5
-        self.min_speed = 0.8         # Aumentado de 0.3 - VELOCIDADE MÍNIMA MAIOR
-        self.cruise_speed = 1.2
+        # Velocidades reduzidas para uma operação mais segura e controlada
+        self.base_speed = 0.5        # Velocidade base em zonas de conforto
+        self.max_speed = 0.8         # Velocidade máxima permitida
+        self.min_speed = 0.3         # Velocidade mínima em curvas ou correções
+        self.cruise_speed = 0.6      # Velocidade ao seguir a parede perfeitamente
         
         # Zonas de controle de velocidade - ajustadas para mais agressividade
         self.precision_zone = 0.2    # Aumentado de 0.1
