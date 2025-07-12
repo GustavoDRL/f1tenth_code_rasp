@@ -75,7 +75,7 @@ class JoyToAckerman(Node):
         # axes[0] = Analógico esquerdo horizontal (esquerda/direita) - PARA VIRAR
         
         speed_axis = msg.axes[1]      # Eixo que já funciona para frente
-        steering_axis = msg.axes[0]   # Eixo horizontal do mesmo analógico para virar
+        steering_axis = msg.axes[3]   # Eixo horizontal do mesmo analógico para virar
         
         # Eliminar valores muito próximos a zero para evitar movimentos indesejados
         if abs(speed_axis) < self.controller_error:
