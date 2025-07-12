@@ -1,6 +1,6 @@
 from setuptools import setup
-from glob import glob
 import os
+from glob import glob
 
 package_name = "joy_converter"
 
@@ -11,9 +11,8 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        ("share/" + package_name + "/launch", ["launch/launch_joy_ackerman.py"]),
-        ("share/" + package_name + "/launch", ["launch/launch_joy_ackerman_fixed.py"]),
-        ("share/" + package_name + "/launch", ["launch/launch_joy_twist.py"]),
+        # Adiciona a instalação de todos os arquivos .launch.py da pasta launch
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.launch.py'))),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -25,7 +24,6 @@ setup(
     entry_points={
         "console_scripts": [
             "joy_ackerman = joy_converter.joy_ackerman:main",
-            "joy_twist = joy_converter.joy_twist:main",
             "joy_keyboard = joy_converter.joy_keyboard_converter:main",
         ],
     },
