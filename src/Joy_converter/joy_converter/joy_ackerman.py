@@ -16,11 +16,11 @@ class JoyToAckerman(Node):
         self.declare_parameter('steer_axis', 0) # Analógico esquerdo horizontal
 
         # Leitura dos parâmetros
-        self.max_speed = self.get_parameter('max_speed').get_value()
-        self.max_steering_angle = self.get_parameter('max_steering_angle').get_value()
-        self.deadman_button = self.get_parameter('deadman_button').get_value()
-        self.speed_axis = self.get_parameter('speed_axis').get_value()
-        self.steer_axis = self.get_parameter('steer_axis').get_value()
+        self.max_speed = self.get_parameter('max_speed').value
+        self.max_steering_angle = self.get_parameter('max_steering_angle').value
+        self.deadman_button = self.get_parameter('deadman_button').value
+        self.speed_axis = self.get_parameter('speed_axis').value
+        self.steer_axis = self.get_parameter('steer_axis').value
 
         self.get_logger().info(f"Usando 'deadman' no botão: {self.deadman_button}")
         self.get_logger().info(f"Eixo de velocidade: {self.speed_axis}, Eixo de direção: {self.steer_axis}")
