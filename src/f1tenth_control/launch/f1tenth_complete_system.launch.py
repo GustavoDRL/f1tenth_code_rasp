@@ -175,7 +175,7 @@ def generate_launch_description():
                 ],
                 output="screen",
             ),
-            # VESC to Odometry Converter
+            # VESC to Odometry Converter (SLAM Compatible)
             Node(
                 package="vesc_ackermann",
                 executable="vesc_to_odom_node",
@@ -186,12 +186,10 @@ def generate_launch_description():
                         "base_frame": "base_link",
                         "speed_to_erpm_gain": 4614.0,
                         "wheelbase": 0.33,
-                        "publish_tf": False,
+                        "publish_tf": True,  # Enable for SLAM
                     }
                 ],
-                remappings=[
-                    ("odom", "/ego_racecar/odom"),
-                ],
+                # No remapping - publish to standard /odom for SLAM compatibility
                 output="screen",
             ),
         ]

@@ -94,9 +94,9 @@
     pid_ki: 0.1
     pid_kd: 0.05
     
-    # ROS2 Topics and Frames
+    # ROS2 Topics and Frames (SLAM Compatible)
     drive_topic: "/drive"
-    odom_topic: "/ego_racecar/odom"
+    odom_topic: "/odom"  # Use standard odom topic for SLAM
     use_vesc_odom: true
     vesc_odom_topic: "/odom"
     odom_frame: "odom"
