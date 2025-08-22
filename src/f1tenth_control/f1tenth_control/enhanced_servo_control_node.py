@@ -217,8 +217,8 @@ class EnhancedServoControlNode(Node):
         self.command_buffer = collections.deque(maxlen=150)
         self.buffer_lock = threading.Lock()
 
-        # Pool de threads para processamento
-        self.executor = ThreadPoolExecutor(  # type: ignore
+        # Pool de threads para processamento  
+        self.thread_executor = ThreadPoolExecutor(  # type: ignore
             max_workers=2, thread_name_prefix="servo_ctrl"
         )
 
@@ -280,6 +280,8 @@ class EnhancedServoControlNode(Node):
             ("command_timeout", 1.0),
             ("max_angular_velocity", 2.0),
             ("enable_safety_limits", True),
+            # TF Publishing Control
+            ("publish_tf", False),
         ]
         self.declare_parameters(namespace="", parameters=params)
 
@@ -348,6 +350,11 @@ class EnhancedServoControlNode(Node):
             )
             self.enable_safety_limits: bool = cast(
                 bool, self.get_parameter("enable_safety_limits").value
+            )
+
+            # TF Publishing Control
+            self.publish_tf: bool = cast(
+                bool, self.get_parameter("publish_tf").value
             )
 
         except ParameterNotDeclaredException as e:
@@ -510,7 +517,7 @@ class EnhancedServoControlNode(Node):
             else:
                 return
 
-        self.executor.submit(self._process_command, latest_cmd)  # type: ignore
+        self.thread_executor.submit(self._process_command, latest_cmd)  # type: ignore
 
     def _process_command(self, msg: AckermannDriveStamped):
         """
@@ -555,7 +562,7 @@ class EnhancedServoControlNode(Node):
         return response
 
     def odom_callback(self, msg: Odometry):
-        """Republica odometria no formato F1TENTH e envia TF."""
+        """Republica odometria no formato F1TENTH e envia TF condicionalmente."""
         f1tenth_odom = Odometry()
         f1tenth_odom.header.stamp = self.get_clock().now().to_msg()
         f1tenth_odom.header.frame_id = self.odom_frame
@@ -564,14 +571,16 @@ class EnhancedServoControlNode(Node):
         f1tenth_odom.twist = msg.twist
         self.odom_publisher.publish(f1tenth_odom)
 
-        transform = TransformStamped()
-        transform.header = f1tenth_odom.header
-        transform.child_frame_id = self.base_frame
-        transform.transform.translation.x = msg.pose.pose.position.x
-        transform.transform.translation.y = msg.pose.pose.position.y
-        transform.transform.translation.z = msg.pose.pose.position.z
-        transform.transform.rotation = msg.pose.pose.orientation
-        self.tf_broadcaster.sendTransform(transform)
+        # ✅ CORREÇÃO TF_SELF_TRANSFORM: Condicionar TF publishing
+        if self.publish_tf:
+            transform = TransformStamped()
+            transform.header = f1tenth_odom.header
+            transform.child_frame_id = self.base_frame
+            transform.transform.translation.x = msg.pose.pose.position.x
+            transform.transform.translation.y = msg.pose.pose.position.y
+            transform.transform.translation.z = msg.pose.pose.position.z
+            transform.transform.rotation = msg.pose.pose.orientation
+            self.tf_broadcaster.sendTransform(transform)
 
     def publish_diagnostics(self):
         """Publica um array de diagnósticos sobre o estado do nó."""
@@ -611,7 +620,7 @@ class EnhancedServoControlNode(Node):
     def destroy_node(self):
         """Realiza cleanup antes de desligar."""
         self.get_logger().info("Desligando nó de controle do servo...")
-        self.executor.shutdown(wait=True)
+        self.thread_executor.shutdown(wait=True)
         if self.pi and self.pi.connected:
             self.pi.set_servo_pulsewidth(self.servo_gpio_pin, 0)
             self.pi.stop()

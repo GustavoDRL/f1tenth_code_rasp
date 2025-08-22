@@ -3,7 +3,7 @@
 **Projeto**: F1TENTH Autonomous Racing System  
 **Versão**: 2.0.0 - **HARDWARE CONTROL VALIDATED**  
 **Status**: ✅ **SISTEMA 100% FUNCIONAL + PERFORMANCE ANALYSIS PENDENTE**  
-**Última Atualização**: 2025-01-20 16:00 UTC-3  
+**Última Atualização**: 2025-08-21 21:00 UTC-3  
 
 ---
 

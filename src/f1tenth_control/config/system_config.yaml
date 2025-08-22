@@ -104,6 +104,47 @@
     
     # Safety
     enable_safety_limits: true
+    
+    # TF Publishing Control (FIX TF_SELF_TRANSFORM)
+    publish_tf: false             # Avoid TF conflict with vesc_to_odom_node
+
+# =============================================================================
+# ENHANCED SERVO CONTROL CONFIGURATION (NAMESPACED)
+# =============================================================================
+/ego_racecar/enhanced_servo_control_node:
+  ros__parameters:
+    # GPIO Hardware Configuration (inherit from servo_control_node)
+    servo_gpio_pin: 18
+    servo_pwm_frequency: 50
+    
+    # Servo Parameters
+    servo_min_pulse_width: 850
+    servo_max_pulse_width: 1500
+    max_steering_angle: 0.4
+    min_steering_angle: -0.4
+    max_angular_velocity: 2.0
+    
+    # Control
+    control_frequency: 100.0
+    command_timeout: 1.0
+    enable_pid: true
+    pid_kp: 0.8
+    pid_ki: 0.1
+    pid_kd: 0.05
+    
+    # Topics and Frames
+    drive_topic: "/drive"
+    odom_topic: "/ego_racecar/odom"
+    use_vesc_odom: true
+    vesc_odom_topic: "/odom"
+    odom_frame: "odom"
+    base_frame: "base_link"
+    
+    # Safety
+    enable_safety_limits: true
+    
+    # TF Publishing Control (CRITICAL FIX)
+    publish_tf: false             # FIX: Prevent TF conflict with vesc_to_odom_node
 
 # =============================================================================
 # JOYSTICK/KEYBOARD CONVERTER CONFIGURATION
