@@ -15,7 +15,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from rclpy.exceptions import ParameterNotDeclaredException
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Float64
 from std_srvs.srv import Trigger
 from geometry_msgs.msg import TransformStamped
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
@@ -282,6 +282,9 @@ class EnhancedServoControlNode(Node):
             ("enable_safety_limits", True),
             # TF Publishing Control
             ("publish_tf", False),
+            # Servo Feedback (NOVO)
+            ("publish_servo_feedback", True),
+            ("servo_feedback_topic", "/servo/command_angle"),
         ]
         self.declare_parameters(namespace="", parameters=params)
 
@@ -356,6 +359,14 @@ class EnhancedServoControlNode(Node):
             self.publish_tf: bool = cast(
                 bool, self.get_parameter("publish_tf").value
             )
+            
+            # Servo Feedback (NOVO)
+            self.publish_servo_feedback: bool = cast(
+                bool, self.get_parameter("publish_servo_feedback").value
+            )
+            self.servo_feedback_topic: str = cast(
+                str, self.get_parameter("servo_feedback_topic").value
+            )
 
         except ParameterNotDeclaredException as e:
             self.get_logger().fatal(f"Parâmetro crítico não declarado: {e}")
@@ -418,6 +429,13 @@ class EnhancedServoControlNode(Node):
 
         # TF broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
+        
+        # Servo feedback publisher (NOVO)
+        if self.publish_servo_feedback:
+            self.servo_feedback_pub = self.create_publisher(
+                Float64, self.servo_feedback_topic, self.low_latency_qos)
+        else:
+            self.servo_feedback_pub = None
 
     def set_servo_angle(self, angle: float, force: bool = False) -> bool:
         """
@@ -473,6 +491,13 @@ class EnhancedServoControlNode(Node):
             with self.angle_lock:
                 self._current_angle = angle
             self.last_control_time = time.time()
+            
+            # NOVO: Publicar feedback do servo para odometria
+            if self.servo_feedback_pub:
+                feedback_msg = Float64()
+                feedback_msg.data = angle
+                self.servo_feedback_pub.publish(feedback_msg)
+            
             return True
         except Exception as e:
             self.get_logger().error(f"Erro ao definir PWM: {e}")

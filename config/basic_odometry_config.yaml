@@ -1,0 +1,150 @@
+# ========================================
+# F1TENTH BASIC ODOMETRY CONFIGURATION
+# ========================================
+# Configuração unificada para odometria básica otimizada
+# Data: 2025-01-26
+# Sistema: VESC MINI 6.7 + Raspberry Pi 4B + GPIO Servo
+
+# ========================================
+# PARÂMETROS FÍSICOS DO VEÍCULO
+# ========================================
+vesc_to_odom_node:
+  ros__parameters:
+    # Dimensões físicas (medidas fisicamente)
+    wheelbase_actual: 0.3302          # Distância entre eixos [m] - MEDIDA REAL
+    wheel_radius: 0.05                # Raio da roda [m] - para referência
+    track_width: 0.25                 # Largura entre rodas [m] - para referência
+    
+    # ========================================
+    # CONVERSÃO VESC (CALIBRADOS)
+    # ========================================
+    # Parâmetros calibrados do sistema atual
+    speed_to_erpm_gain: 4614.0        # Conversão velocidade -> ERPM
+    speed_to_erpm_offset: 0.0         # Offset de velocidade
+    
+    # ========================================
+    # LIMITES DE SEGURANÇA
+    # ========================================
+    # Limites para operação segura
+    min_speed_threshold: 0.05         # 5cm/s - ignora ruído de velocidade
+    max_speed_limit: 5.0              # 5m/s - limite máximo de velocidade
+    max_angular_velocity: 3.0         # 3 rad/s - limite de velocidade angular
+    max_acceleration: 2.0             # 2 m/s² - limite de aceleração
+    
+    # ========================================
+    # FILTROS BÁSICOS
+    # ========================================
+    # Configuração de filtros simples
+    filter_window_size: 5             # Janela do filtro de média móvel
+    outlier_threshold: 3.0            # 3 desvios padrão para outliers
+    max_time_delta: 0.1               # 100ms máximo entre updates
+    
+    # ========================================
+    # FRAMES ROS2
+    # ========================================
+    # Configuração de frames padrão
+    odom_frame: "odom"                # Frame de odometria
+    base_frame: "base_link"           # Frame base do robô
+    publish_tf: true                  # Publicar transformação TF
+    
+    # ========================================
+    # COVARIÂNCIA ADAPTATIVA
+    # ========================================
+    # Parâmetros para covariância dinâmica
+    base_xy_covariance: 0.01          # Covariância base x/y [m²]
+    base_yaw_covariance: 0.05         # Covariância base yaw [rad²]
+    speed_covariance_factor: 0.1      # Fator de velocidade
+    turn_covariance_factor: 0.5       # Fator de curva
+    
+    # ========================================
+    # DEBUG E MONITORAMENTO
+    # ========================================
+    # Configurações de debug
+    enable_statistics: true           # Habilitar estatísticas
+    log_interval_updates: 1000        # Log a cada 1000 updates (10s @ 100Hz)
+    enable_debug_output: false        # Output de debug detalhado
+    
+# ========================================
+# SERVO FEEDBACK PUBLISHER
+# ========================================
+servo_feedback_publisher:
+  ros__parameters:
+    # Modelo dinâmico do servo
+    servo_time_constant: 0.05         # 50ms - constante de tempo do servo
+    feedback_frequency: 100.0         # 100Hz - frequência de feedback
+    max_servo_rate: 10.0              # 10 rad/s - velocidade máxima do servo
+    
+    # Filtros
+    smoothing_window: 10              # Janela de suavização
+    
+# ========================================
+# ENHANCED SERVO CONTROL (EXISTENTE)
+# ========================================
+enhanced_servo_control_node:
+  ros__parameters:
+    # GPIO e PWM (mantidos do sistema atual)
+    servo_gpio_pin: 18
+    servo_pwm_frequency: 50
+    servo_min_pulse_width: 1000
+    servo_max_pulse_width: 2000
+    gpio_connection_timeout: 5.0
+    
+    # Controle (mantidos)
+    max_steering_angle: 0.4
+    min_steering_angle: -0.4
+    control_frequency: 100.0
+    angle_tolerance: 0.01
+    
+    # PID (mantidos)
+    pid_kp: 0.8
+    pid_ki: 0.1
+    pid_kd: 0.05
+    enable_pid: true
+    
+    # Frames e tópicos (mantidos)
+    odom_frame: "odom"
+    base_frame: "base_link"
+    drive_topic: "/drive"
+    odom_topic: "/ego_racecar/odom"
+    use_vesc_odom: true
+    vesc_odom_topic: "/odom"
+    
+    # Segurança (mantidos)
+    command_timeout: 1.0
+    max_angular_velocity: 2.0
+    enable_safety_limits: true
+    
+    # TF Publishing Control (mantido)
+    publish_tf: false                 # MANTIDO false para evitar conflito
+    
+    # ========================================
+    # NOVO: INTEGRAÇÃO COM FEEDBACK
+    # ========================================
+    # Configurações para feedback do servo
+    publish_servo_feedback: true      # Publicar feedback de posição
+    servo_feedback_topic: "/sensors/servo_position_command"  # Tópico interno
+
+# ========================================
+# VESC DRIVER (MANTIDO)
+# ========================================
+vesc_driver:
+  ros__parameters:
+    # Configurações atuais mantidas
+    port: "/dev/sensors/vesc"
+    speed_max: 20000.0
+    speed_min: -20000.0
+    use_servo_cmd: false              # MANTIDO false (servo via GPIO)
+    publish_odom: false               # Deixa odometria para vesc_to_odom
+
+# ========================================
+# ACKERMANN TO VESC (MANTIDO)
+# ========================================
+ackermann_to_vesc:
+  ros__parameters:
+    # Parâmetros mantidos do sistema atual
+    speed_to_erpm_gain: 4614.0
+    speed_to_erpm_offset: 0.0
+    steering_to_servo_gain: 1.0       # Não usado (servo via GPIO)
+    steering_to_servo_offset: 0.0     # Não usado (servo via GPIO)
+    speed_max: 3.0
+    speed_min: -3.0
